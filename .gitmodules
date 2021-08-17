@@ -1,0 +1,3 @@
+[submodule "GameLink"]
+	path = GameLink
+	url = https://github.com/muxy/gamelink-csharp
