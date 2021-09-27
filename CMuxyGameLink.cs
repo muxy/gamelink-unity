@@ -24,6 +24,7 @@ public class CMuxyGameLink : MonoBehaviour
     public InputField StateInput;
     public Dropdown BroadcastTargetDropdown;
     public Dropdown StateTargetDropdown;
+    public Dropdown TransactionsDropdown;
     public Text ResultText;
 
     private String GAMELINK_PLAYERPREF_RT = "MuxyGameLinkRefreshToken";
@@ -84,7 +85,7 @@ public class CMuxyGameLink : MonoBehaviour
         GameLink.OnDebugMessage(
         (Message) =>
         {
-            LogResult("GAMELINK_DEBUG: " + Message, ColWhite, true);
+            //LogResult("GAMELINK_DEBUG: " + Message, ColWhite, true);
         });
     }
 
@@ -93,11 +94,12 @@ public class CMuxyGameLink : MonoBehaviour
         GameLinkSetup();
         UISetup();
 
-        WS = new WebSocket("ws://" + GameLink.ConnectionAddress(Stage.Sandbox));
+        String Addr = "ws://" + GameLink.ConnectionAddress(Stage.Sandbox);
+        WS = new WebSocket(Addr);
 
         WS.OnOpen += () =>
         {
-            Debug.Log("WS Connection open!");
+            Debug.Log("WS Connection open [" + Addr + "]!");
         };
 
         WS.OnError += (e) =>
@@ -183,6 +185,7 @@ public class CMuxyGameLink : MonoBehaviour
     {
         LogResult("Subscribed to Poll: " + PollIdInput.text, ColSuccess);
         GameLink.SubscribeToPoll(PollIdInput.text);
+
     }
 
     public void OnClickUnsubscribeToPoll()
@@ -205,6 +208,41 @@ public class CMuxyGameLink : MonoBehaviour
     {
         LogResult("Detached OnPollUpdate: " + OnPollUpdateId, ColWhite);
         GameLink.DetachOnPollUpdate(OnPollUpdateId);
+    }
+
+    List<Transaction> TxList = new List<Transaction>(); 
+    public void OnClickGetOutstandingTransactions()
+    {
+        TransactionsDropdown.ClearOptions();
+        UInt32 RetId = GameLink.GetOutstandingTransactions(SKUInput.text, (Transactions) =>
+        {
+            LogResult("Outstanding transactions count: " + Transactions.Count, ColWhite);
+            for (UInt32 i = 0; i < Transactions.Count; i++)
+            {
+                Transaction Tx = Transactions.At(i);
+                TxList.Add(Tx);
+                List<string> DropOptions = new List<string>();
+                DropOptions.Add("ID " + Tx.Id + ": " + Tx.UserName + " bought " + Tx.DisplayName + " [" + Tx.SKU + " ] ($" + Tx.Cost + ")");
+                TransactionsDropdown.AddOptions(DropOptions);
+            }
+        });
+        LogResult("Getting outstanding transactions", ColWhite);
+    }
+
+    public void OnClickValidateTransaction()
+    {
+        Transaction Tx = TxList[TransactionsDropdown.value];
+        GameLink.ValidateTransaction(Tx.Id, "");
+        LogResult("Validated transaction: " + Tx.Id, ColSuccess);
+        OnClickGetOutstandingTransactions();
+    }
+
+    public void OnClickRefundTransaction()
+    {
+        Transaction Tx = TxList[TransactionsDropdown.value];
+        GameLink.RefundTransactionByID(Tx.Id, Tx.UserId);
+        LogResult("Refunded transaction: " + Tx.Id, ColSuccess);
+        OnClickGetOutstandingTransactions();
     }
 
     public void OnClickSubscribeToSKU()
@@ -231,22 +269,22 @@ public class CMuxyGameLink : MonoBehaviour
         GameLink.UnsubscribeFromAllPurchases();
     }
 
-    private UInt32 OnPurchaseId = 0;
-    public void OnClickOnPurchaseBits()
+    private UInt32 OnTransactionId = 0;
+    public void OnClickOnTransaction()
     {
-        LogResult("Attached OnTwitchPurchaseBits: " + OnPurchaseId, ColSuccess);
+        LogResult("Attached OnTransaction: " + OnTransactionId, ColSuccess);
 
-        OnPurchaseId = GameLink.OnTwitchPurchaseBits(
-        (BitsPurchase) => 
+        OnTransactionId = GameLink.OnTransaction(
+        (Tx) => 
         {
-            LogResult(BitsPurchase.UserName + " bought " + BitsPurchase.DisplayName + " [" + BitsPurchase.SKU + " ] ($" + BitsPurchase.Cost + ")", ColWhite, true);
+            LogResult("ID " + Tx.Id + ": " + Tx.UserName + " bought " + Tx.DisplayName + " [" + Tx.SKU + " ] ($" + Tx.Cost + ")", ColWhite, true);
         });
     }
 
-    public void OnClickDetachOnPurchaseBits()
+    public void OnClickDetachOnTransaction()
     {
-        LogResult("Detached OnTwitchPurchaseBits: " + OnPurchaseId, ColWhite);
-        GameLink.DetachOnTwitchPurchaseBits(OnPurchaseId);
+        LogResult("Detached OnTransaction: " + OnTransactionId, ColWhite);
+        GameLink.DetachOnTransaction(OnTransactionId);
     }
 
     public void OnClickSendBroadcast()
