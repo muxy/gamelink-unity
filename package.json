@@ -1,0 +1,16 @@
+{
+	"name": "com.muxy.gamelink",
+	"version": "0.0.1",
+	"displayName": "Muxy GameLink",
+	"description": "Easily integrate Twitch interactivity into your game",
+	"unity": "2019.1",
+	"unityRelease": "0b5",
+	"documentationUrl": "https://muxy.io/",
+	"changelogUrl": "",
+	"licensesUrl": "",
+	"author": {
+	  "name": "Muxy",
+	  "email": "team@muxy.io",
+	  "url": "https://www.muxy.io"
+	}
+  }
