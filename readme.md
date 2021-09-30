@@ -8,9 +8,7 @@ Before you get started you will want to register your extension in the [Muxy Das
 
 Simply copy the GameLink folder into your new or existing Unity project.
 
-You will need your own JSON library and Websocket library to properly use GameLink.
-
-GameLinkTestScene.unity shows example usages of GameLink. NativeWebsocket was used for the example, so to properly run the test scene download the NativeWebSocket from the Unity Store or at (https://github.com/endel/NativeWebSocket). Be sure to also set your GameLink ClientId in the CMuxyGameLink component.
+GameLinkTestScene.unity shows example usages of GameLink. Be sure to set your GameLink ClientId in the CMuxyGameLink component.
 
 ## Documentation
 
