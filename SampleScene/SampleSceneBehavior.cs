@@ -2,16 +2,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using NativeWebSocket;
 using System.Runtime.InteropServices;
 
 using UnityEngine.UI;
 
 using MuxyGameLink;
 
-public class CMuxyGameLink : MonoBehaviour
+public class SampleSceneBehavior : MonoBehaviour
 {
-    public String GAMELINK_CLIENT_ID = "";
+    public String GAMELINK_CLIENT_ID = "empty";
 
     public List<GameObject> Groups;
 
@@ -31,8 +30,8 @@ public class CMuxyGameLink : MonoBehaviour
 
     private SDK.AuthenticationCallback AuthCB;
 
-    private MuxyGameLink.SDK GameLink;
-    private WebSocket WS;
+    private SDK GameLink;
+    private WebsocketTransport Transport;
 
     private Color ColWhite = new Color(255, 255, 255);
     private Color ColSuccess = new Color(0, 255, 0);
@@ -82,69 +81,24 @@ public class CMuxyGameLink : MonoBehaviour
             }
         };
 
-        GameLink.OnDebugMessage(
-        (Message) =>
+        GameLink.OnDebugMessage((message) =>
         {
-            //LogResult("GAMELINK_DEBUG: " + Message, ColWhite, true);
+            Debug.Log(String.Format("MuxyGameLinK: {0}", message));
         });
     }
 
-    async void Start()
+    void Start()
     {
         GameLinkSetup();
         UISetup();
 
-        String Addr = "ws://" + GameLink.ConnectionAddress(Stage.Sandbox);
-        WS = new WebSocket(Addr);
-
-        WS.OnOpen += () =>
-        {
-            Debug.Log("WS Connection open [" + Addr + "]!");
-        };
-
-        WS.OnError += (e) =>
-        {
-            Debug.Log("WS Error! " + e);
-        };
-
-        WS.OnClose += (e) =>
-        {
-            Debug.Log("WS Connection closed!");
-        };
-
-        WS.OnMessage += (bytes) =>
-        {
-            String Message = System.Text.Encoding.UTF8.GetString(bytes);
-            GameLink.ReceiveMessage(Message);
-            Debug.Log("WS OnMessage! " + Message);
-        };
-
-        // Keep sending messages at every 0.1s
-        InvokeRepeating("SendWebSocketMessage", 0.0f, 0.1f);
-        await WS.Connect();
-    }
-
-    void Update()
-    {
-    #if !UNITY_WEBGL || UNITY_EDITOR
-        WS.DispatchMessageQueue();
-    #endif
-    }
-
-    void SendWebSocketMessage()
-    {
-        if (WS.State == WebSocketState.Open)
-        {
-            GameLink.ForEachPayload((string Payload) =>
-            {
-                WS.SendText(Payload);
-            });
-        }
+        Transport = new WebsocketTransport();
+        Transport.OpenAndRunInStage(GameLink, Stage.Sandbox);
     }
 
     private void OnApplicationQuit()
     {
-        WS.Close();
+        Transport.Stop();
     }
 
     public void SwitchTab(GameObject Visible)
