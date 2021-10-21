@@ -168,12 +168,14 @@ public class SampleSceneBehavior : MonoBehaviour
     public void OnClickGetOutstandingTransactions()
     {
         TransactionsDropdown.ClearOptions();
-        UInt32 RetId = GameLink.GetOutstandingTransactions(SKUInput.text, (Transactions) =>
+        UInt32 RetId = GameLink.GetOutstandingTransactions(SKUInput.text, (OutstandingTransactions Outstanding) =>
         {
+            List<Transaction> Transactions = Outstanding.Transactions;
             LogResult("Outstanding transactions count: " + Transactions.Count, ColWhite);
-            for (UInt32 i = 0; i < Transactions.Count; i++)
+
+            for (int i = 0; i < Transactions.Count; i++)
             {
-                Transaction Tx = Transactions.At(i);
+                Transaction Tx = Transactions[i];
                 TxList.Add(Tx);
                 List<string> DropOptions = new List<string>();
                 DropOptions.Add("ID " + Tx.Id + ": " + Tx.UserName + " bought " + Tx.DisplayName + " [" + Tx.SKU + " ] ($" + Tx.Cost + ")");
@@ -265,13 +267,13 @@ public class SampleSceneBehavior : MonoBehaviour
     {
         LogResult("Attached OnDatastream: " + OnDatastreamId, ColSuccess);
 
-        OnDatastreamId = GameLink.OnDatastream(
-        (Update) =>
+        OnDatastreamId = GameLink.OnDatastream((DatastreamUpdate Update) =>
         {
-            LogResult("OnDatastream event count: " + Update.Count, ColWhite, true);
-            for (UInt32 i = 0; i < Update.Count; i++)
+            List<DatastreamUpdate.Event> events = Update.Events;
+            LogResult("OnDatastream event count: " + events.Count, ColWhite, true);
+            for (int i = 0; i < events.Count; i++)
             {
-                DatastreamUpdate.Event Event = Update.At(i);
+                DatastreamUpdate.Event Event = events[i];
                 LogResult("Datastream Event JSON: " + Event.Json, ColWhite, true);
             }
         });
