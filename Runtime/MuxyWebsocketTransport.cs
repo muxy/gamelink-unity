@@ -105,8 +105,7 @@ namespace MuxyGameLink
 		}
 
 		/// <summary>
-		///  Updates the Websocket Transport 
-		///  Any callbacks invoked from `instance` will be called on a background thread, not the main thread.
+		///  Updates the Websocket Transport, it's only required to call this if you set HandleMessagesInMainThread to true when initializing the WebsocketTransport
 		/// </summary>
 		/// <param name="instance">The instance to use for sending and receiving messages</param>
 		public void Update(SDK instance)
