@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Net.WebSockets;
 using System.Threading;
 using System.IO;
+using System.Collections.Concurrent;
 
 using UnityEngine;
 
@@ -17,6 +18,9 @@ namespace MuxyGameLink
 		private CancellationToken CancelToken => CancellationSource.Token;
 		private static readonly Encoding UTF8Encoding = new UTF8Encoding(false);
 
+		private bool HandleMessagesInMainThread = false;
+		private ConcurrentQueue<string> Messages = new ConcurrentQueue<string>();
+
 		private Thread WriteThread;
 		private Thread ReadThread;
 		private bool Done = false;
@@ -24,10 +28,12 @@ namespace MuxyGameLink
 
 		/// <summary>
 		///  Creates a websocket transport without an associated Gamelink instance or stage.
+		/// <param name="HandleMessagesInMainThread">If you are using Unity or an engine that doesn't work nicely with multithreading this should be set to true. If set to true, you must call Update() for GameLink to receive messages</param>
 		/// </summary>
-		public WebsocketTransport()
+		public WebsocketTransport(bool HandleMessagesInMainThread)
 		{
 			Websocket = new ClientWebSocket();
+			this.HandleMessagesInMainThread = HandleMessagesInMainThread;
 		}
 
 		/// <summary>
@@ -38,6 +44,17 @@ namespace MuxyGameLink
 		public async Task Open(string uri)
 		{
 			await Websocket.ConnectAsync(new Uri(uri), CancelToken).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		///  Combined call to Open and then Run. Computes the connection URL by calling SDK.ConnectionAddress.
+		/// </summary>
+		/// <param name="instance"></param>
+		/// <param name="stage"></param>
+		public async void OpenAndRunInStage(SDK instance, Stage stage)
+		{
+			await Open("ws://" + instance.ConnectionAddress(stage));
+			Run(instance);
 		}
 
 		/// <summary>
@@ -88,14 +105,17 @@ namespace MuxyGameLink
 		}
 
 		/// <summary>
-		///  Combined call to Open and then Run. Computes the connection URL by calling SDK.ConnectionAddress.
+		///  Updates the Websocket Transport 
+		///  Any callbacks invoked from `instance` will be called on a background thread, not the main thread.
 		/// </summary>
-		/// <param name="instance"></param>
-		/// <param name="stage"></param>
-		public async void OpenAndRunInStage(SDK instance, Stage stage)
+		/// <param name="instance">The instance to use for sending and receiving messages</param>
+		public void Update(SDK instance)
 		{
-			await Open("ws://" + instance.ConnectionAddress(stage));
-			Run(instance);
+			string m;
+			while (Messages.TryDequeue(out m))
+			{
+				instance.ReceiveMessage(m);
+			}
 		}
 
 		/// <summary>
@@ -140,7 +160,15 @@ namespace MuxyGameLink
             }
 
 			string input = UTF8Encoding.GetString(memory.ToArray());
-			instance.ReceiveMessage(input);
+
+			if (HandleMessagesInMainThread)
+            {
+				Messages.Enqueue(input);
+            }
+			else
+            {
+				instance.ReceiveMessage(input);
+			}
 		}
 	}
 }

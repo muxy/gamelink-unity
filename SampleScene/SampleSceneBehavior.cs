@@ -83,7 +83,7 @@ public class SampleSceneBehavior : MonoBehaviour
 
         GameLink.OnDebugMessage((message) =>
         {
-            Debug.Log(String.Format("MuxyGameLinK: {0}", message));
+            Debug.Log(String.Format("MuxyGameLink: {0}", message));
         });
     }
 
@@ -92,8 +92,13 @@ public class SampleSceneBehavior : MonoBehaviour
         GameLinkSetup();
         UISetup();
 
-        Transport = new WebsocketTransport();
+        Transport = new WebsocketTransport(true);
         Transport.OpenAndRunInStage(GameLink, Stage.Sandbox);
+    }
+
+    public void Update()
+    {
+        Transport.Update(GameLink);
     }
 
     private void OnApplicationQuit()
