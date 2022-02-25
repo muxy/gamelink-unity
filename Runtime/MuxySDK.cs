@@ -216,6 +216,14 @@ namespace MuxyGameLink
             return Imported.UpdateStateWithNull(this.Instance, Target, Operation, Path);
         }
 
+        /// <summary> Updates target state with PatchList </summary>
+        /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
+        /// <returns> RequestId </returns>
+        public UInt16 UpdateStateWithPatchList(string Target, PatchList PList)
+        {
+            return Imported.UpdateStateWithPatchList(this.Instance, Target, PList.Obj);
+        }
+
         /// <summary> Subscribe to state updates, a callback must first be set with OnStateUpdate </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <returns> RequestId </returns>
@@ -393,13 +401,21 @@ namespace MuxyGameLink
         #endregion
 
         #region Broadcasts
-        /// <summary>Broadcast json to target</summary>
-        /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
+        /// <summary> Broadcast message </summary>
+        /// <param name="Topic"> Topic of the broadcast </param>
         /// <param name="Json"> Json to be sent in the broadcast</param> 
         /// <returns> RequestId </returns>
-        public UInt16 SendBroadcast(string Target, string Json)
+        public UInt16 SendBroadcast(string Topic, string Json)
         {
-            return Imported.SendBroadcast(this.Instance, Target, Json);
+            return Imported.SendBroadcast(this.Instance, Topic, Json);
+        }
+
+        /// <summary> Broadcast message </summary>
+        /// <param name="Topic"> Topic of the broadcast </param>
+        /// <returns> RequestId </returns>
+        public UInt16 SendBroadcast(string Topic)
+        {
+            return Imported.SendBroadcast(this.Instance, Topic, "{}");
         }
         #endregion
 
@@ -645,7 +661,70 @@ namespace MuxyGameLink
                 OnPollUpdateHandles.Remove(Handle);
             }
         }
+
         #endregion
+
+        public class PatchList
+        {
+            public PatchList()
+            {
+                this.Obj = Imported.PatchList_Make();
+            }
+            public void FreeMemory()
+            {
+                Imported.PatchList_Kill(this.Obj);
+            }
+
+            public void UpdateStateWithInteger(String Operation, String Path, Int64 Val)
+            {
+                Imported.PatchList_UpdateStateWithInteger(this.Obj, Operation, Path, Val);
+            }
+
+            public void UpdateStateWithDouble(String Operation, String Path, double Val)
+            {
+                Imported.PatchList_UpdateStateWithDouble(this.Obj, Operation, Path, Val);
+            }
+
+            public void UpdateStateWithBoolean(String Operation, String Path, bool Val)
+            {
+                Imported.PatchList_UpdateStateWithBoolean(this.Obj, Operation, Path, Val);
+            }
+
+            public void UpdateStateWithString(String Operation, String Path, String Val)
+            {
+                Imported.PatchList_UpdateStateWithString(this.Obj, Operation, Path, Val);
+            }
+
+            public void UpdateStateWithLiteral(String Operation, String Path, String Val)
+            {
+                Imported.PatchList_UpdateStateWithLiteral(this.Obj, Operation, Path, Val);
+            }
+
+            public void UpdateStateWithNull(String Operation, String Path)
+            {
+                Imported.PatchList_UpdateStateWithNull(this.Obj, Operation, Path);
+            }
+
+            public void UpdateStateWithJson(String Operation, String Path, String Val)
+            {
+                Imported.PatchList_UpdateStateWithJson(this.Obj, Operation, Path, Val);
+            }
+
+            public void UpdateStateWithEmptyArray(String Operation, String Path)
+            {
+                Imported.PatchList_UpdateStateWithEmptyArray(this.Obj, Operation, Path);
+            }
+            public bool Empty()
+            {
+                return Imported.PatchList_Empty(this.Obj);
+            }
+            public void Clear()
+            {
+                Imported.PatchList_Clear(this.Obj);
+            }
+
+            public Imports.Schema.PatchList Obj;
+        }
 
         #region Debugging
         public delegate void OnDebugMessageCallback(String Message);
@@ -686,5 +765,6 @@ namespace MuxyGameLink
         private Dictionary<UInt32, GCHandle> OnPollUpdateHandles;
         private Dictionary<UInt32, GCHandle> OnConfigUpdateHandles;
         #endregion
+
     }
 }

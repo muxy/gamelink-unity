@@ -115,7 +115,7 @@ namespace MuxyGameLink
             this.UserName = NativeString.StringFromUTF8(Imported.Schema_Transaction_GetUserName(Obj));
             this.Cost = Imported.Schema_Transaction_GetCost(Obj);
             this.Timestamp = NativeTimestamp.DateTimeFromMilliseconds(Imported.Schema_Transaction_GetTimestamp(Obj));
-            this.Json = NativeString.StringFromUTF8AndDeallocate(Imported.Schema_Transaction_GetAdditionalJson(Obj));
+            this.Json = NativeString.StringFromUTF8AndDeallocate(Imported.Schema_Transaction_GetJson(Obj));
         }
 
         public String Id { get; private set; }
@@ -247,6 +247,21 @@ namespace MuxyGameLink
                 Results.Add(Imported.Schema_GetPollResponse_GetResultAt(Obj, i));
             }
         }
+        public int GetWinnerIndex()
+        {
+            int winner = 0;
+            int index = 0;
+            for (int i = 0; i < Results.Count; i++)
+            {
+                if (Results[i] > winner)
+                {
+                    winner = Results[i];
+                    index = i;
+                }
+            }
+
+            return index;
+        }
 
         public String PollId { get; private set; }
         public String Prompt { get; private set; }
@@ -285,6 +300,21 @@ namespace MuxyGameLink
                 Results.Add(Imported.Schema_PollUpdateResponse_GetResultAt(Obj, i));
             }
         }
+        public int GetWinnerIndex()
+        {
+            int winner = 0;
+            int index = 0;
+            for (int i = 0; i < Results.Count; i++)
+            {
+                if (Results[i] > winner)
+                {
+                    winner = Results[i];
+                    index = i;
+                }
+            }
+
+            return index;
+        }
 
         public String PollId { get; private set; }
         public String Prompt { get; private set; }
@@ -294,4 +324,6 @@ namespace MuxyGameLink
         public List<String> Options { get; private set; }
         public List<Int32> Results { get; private set; }
     }
+
+
 }
