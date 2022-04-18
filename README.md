@@ -6,7 +6,7 @@ Before you get started you will want to register your extension in the [Muxy Das
 
 ## Getting Started
 
-Simply copy the GameLink folder into your new or existing Unity project, in the `Packages/` directory
+Create a new `GameLink` directory in the `Packages/` directory in your Unity project and copy this repo into it.
 
 GameLinkTestScene.unity shows example usages of GameLink. Be sure to set your GameLink ClientId in the CMuxyGameLink component.
 
