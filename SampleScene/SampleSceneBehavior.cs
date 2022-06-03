@@ -251,7 +251,7 @@ public class SampleSceneBehavior : MonoBehaviour
     public void OnClickSendBroadcast()
     {
         LogResult("Sent broadcast", ColSuccess);
-        //GameLink.SendBroadcast(BroadcastTargetDropdown.options[BroadcastTargetDropdown.value].text, BroadcastInput.text);
+		GameLink.SendBroadcast("topic_id", BroadcastInput.text);
     }
 
     public void OnClickSubscribeToDatastream()
