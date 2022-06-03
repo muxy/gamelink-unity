@@ -627,7 +627,7 @@ namespace MuxyGameLink
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported .GetPoll(this.Instance, PollId, WrapperCallback, IntPtr.Zero);
+            return Imported.GetPoll(this.Instance, PollId, WrapperCallback, IntPtr.Zero);
         }
 
         public delegate void PollUpdateResponseCallback(PollUpdateResponse PResp);
