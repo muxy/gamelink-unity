@@ -81,6 +81,11 @@ namespace MuxyGameLink.Imports
             public IntPtr Obj;
         }
 
+        public struct PatchList
+        {
+            public IntPtr Obj;
+        }
+
         public struct ConfigResponse
         {
             public IntPtr Obj;
@@ -232,19 +237,19 @@ namespace MuxyGameLink.Imports
 
         #region State
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SetState")]
-        public static extern UInt16 SetState(SDKInstance GameLink, String Target, String JsonString);
+        public static extern UInt16 SetState(SDKInstance GameLink, Int32 Target, String JsonString);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetState")]
-        public static extern UInt16 GetState(SDKInstance GameLink, String Target, StateGetDelegate Callback, VoidPtr UserData);
+        public static extern UInt16 GetState(SDKInstance GameLink, Int32 Target, StateGetDelegate Callback, VoidPtr UserData);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_StateResponse_GetJson")]
         public static extern AllocatedStringPtr Schema_StateResponse_GetJson(Schema.StateResponse Resp);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SubscribeToStateUpdates")]
-        public static extern UInt16 SubscribeToStateUpdates(SDKInstance GameLink, String Target);
+        public static extern UInt16 SubscribeToStateUpdates(SDKInstance GameLink, Int32 Target);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UnsubscribeFromStateUpdates")]
-        public static extern UInt16 UnsubscribeFromStateUpdates(SDKInstance GameLink, String target);
+        public static extern UInt16 UnsubscribeFromStateUpdates(SDKInstance GameLink, Int32 Target);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_OnStateUpdate")]
         public static extern UInt32 OnStateUpdate(SDKInstance GameLink, StateUpdateDelegate Callback, VoidPtr UserData);
@@ -253,19 +258,22 @@ namespace MuxyGameLink.Imports
         public static extern void DetachOnStateUpdate(SDKInstance GameLink, UInt32 Id);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateStateWithInteger")]
-        public static extern UInt16 UpdateStateWithInteger(SDKInstance GameLink, String Target, String Operation, String Path, Int64 Value);
+        public static extern UInt16 UpdateStateWithInteger(SDKInstance GameLink, Int32 Target, Int32 Operation, String Path, Int64 Value);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateStateWithDouble")]
-        public static extern UInt16 UpdateStateWithDouble(SDKInstance GameLink, String Target, String Operation, String Path, Double Value);
+        public static extern UInt16 UpdateStateWithDouble(SDKInstance GameLink, Int32 Target, Int32 Operation, String Path, Double Value);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateStateWithString")]
-        public static extern UInt16 UpdateStateWithString(SDKInstance GameLink, String Target, String Operation, String Path, String Value);
+        public static extern UInt16 UpdateStateWithString(SDKInstance GameLink, Int32 Target, Int32 Operation, String Path, String Value);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateStateWithLiteral")]
-        public static extern UInt16 UpdateStateWithLiteral(SDKInstance GameLink, String Target, String Operation, String Path, String JsonLiteral);
+        public static extern UInt16 UpdateStateWithLiteral(SDKInstance GameLink, Int32 Target, Int32 Operation, String Path, String JsonLiteral);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateStateWithNull")]
-        public static extern UInt16 UpdateStateWithNull(SDKInstance GameLink, String Target, String Operation, String Path);
+        public static extern UInt16 UpdateStateWithNull(SDKInstance GameLink, Int32 Target, Int32 Operation, String Path);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateStateWithPatchList")]
+        public static extern UInt16 UpdateStateWithPatchList(SDKInstance GameLink, Int32 Target, Schema.PatchList PList);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_StateUpdateResponse_GetTarget")]
         public static extern StringPtr Schema_StateUpdate_GetTarget(Schema.StateUpdate Object);
@@ -274,12 +282,41 @@ namespace MuxyGameLink.Imports
         public static extern AllocatedStringPtr Schema_StateUpdate_GetJson(Schema.StateUpdate Object);
         #endregion
 
+        #region PatchList
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_Make")]
+        public static extern Schema.PatchList PatchList_Make();
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_Kill")]
+        public static extern void PatchList_Kill(Schema.PatchList PList);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithInteger")]
+        public static extern void PatchList_UpdateStateWithInteger(Schema.PatchList PList, Int32 Operation, String Path, Int64 Val);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithDouble")]
+        public static extern void PatchList_UpdateStateWithDouble(Schema.PatchList PList, Int32 Operation, String Path, double Val);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithBoolean")]
+        public static extern void PatchList_UpdateStateWithBoolean(Schema.PatchList PList, Int32 Operation, String Path, bool Val);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithString")]
+        public static extern void PatchList_UpdateStateWithString(Schema.PatchList PList, Int32 Operation, String Path, String Val);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithLiteral")]
+        public static extern void PatchList_UpdateStateWithLiteral(Schema.PatchList PList, Int32 Operation, String Path, String Val);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithNull")]
+        public static extern void PatchList_UpdateStateWithNull(Schema.PatchList PList, Int32 Operation, String Path);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithJson")]
+        public static extern void PatchList_UpdateStateWithJson(Schema.PatchList PList, Int32 Operation, String Path, String Val);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithEmptyArray")]
+        public static extern void PatchList_UpdateStateWithEmptyArray(Schema.PatchList PList, Int32 Operation, String Path);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_Empty")]
+        public static extern bool PatchList_Empty(Schema.PatchList PList);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_Clear")]
+        public static extern void PatchList_Clear(Schema.PatchList PList);
+
+
+        #endregion
+
         #region Config
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SetChannelConfig")]
         public static extern UInt16 SetChannelConfig(SDKInstance GameLink, String JsonString);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetConfig")]
-        public static extern UInt16 GetConfig(SDKInstance GameLink, String Target, ConfigGetDelegate Callback, VoidPtr UserData);
+        public static extern UInt16 GetConfig(SDKInstance GameLink, Int32 Target, ConfigGetDelegate Callback, VoidPtr UserData);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_ConfigResponse_GetConfigID")]
         public static extern StringPtr Schema_ConfigResponse_GetConfigID(Schema.ConfigResponse Response);
@@ -288,21 +325,21 @@ namespace MuxyGameLink.Imports
         public static extern AllocatedStringPtr Schema_ConfigResponse_GetJson(Schema.ConfigResponse Response);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateChannelConfigWithInteger")]
-        public static extern UInt16 UpdateChannelConfigWithInteger(SDKInstance GameLink, String Operation, String Path, Int64 Value);
+        public static extern UInt16 UpdateChannelConfigWithInteger(SDKInstance GameLink, Int32 Operation, String Path, Int64 Value);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateChannelConfigWithDouble")]
-        public static extern UInt16 UpdateChannelConfigWithDouble(SDKInstance GameLink, String Operation, String Path, double Value);
+        public static extern UInt16 UpdateChannelConfigWithDouble(SDKInstance GameLink, Int32 Operation, String Path, double Value);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateChannelConfigWithString")]
-        public static extern UInt16 UpdateChannelConfigWithString(SDKInstance GameLink, String Operation, String Path, String Value);
+        public static extern UInt16 UpdateChannelConfigWithString(SDKInstance GameLink, Int32 Operation, String Path, String Value);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateChannelConfigWithLiteral")]
-        public static extern UInt16 UpdateChannelConfigWithLiteral(SDKInstance GameLink, String Operation, String Path, String JsonLiteral);
+        public static extern UInt16 UpdateChannelConfigWithLiteral(SDKInstance GameLink, Int32 Operation, String Path, String JsonLiteral);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UpdateChannelConfigWithNull")]
-        public static extern UInt16 UpdateChannelConfigWithNull(SDKInstance GameLink, String Operation, String Path);
+        public static extern UInt16 UpdateChannelConfigWithNull(SDKInstance GameLink, Int32 Operation, String Path);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SubscribeToConfigurationChanges")]
-        public static extern UInt16 SubscribeToConfigurationChanges(SDKInstance GameLink, String Target);
+        public static extern UInt16 SubscribeToConfigurationChanges(SDKInstance GameLink, Int32 Target);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UnsubscribeToConfigurationChanges")]
-        public static extern UInt16 UnsubscribeFromConfigurationChanges(SDKInstance GameLink, String Target);
+        public static extern UInt16 UnsubscribeFromConfigurationChanges(SDKInstance GameLink, Int32 Target);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_ConfigUpdateResponse_GetConfigID")]
         public static extern StringPtr Schema_ConfigUpdateResponse_GetConfigID(Schema.ConfigUpdate Update);
@@ -319,7 +356,7 @@ namespace MuxyGameLink.Imports
 
         #region Datastream
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SendBroadcast")]
-        public static extern UInt16 SendBroadcast(SDKInstance GameLink, String Target, String JsonString);
+        public static extern UInt16 SendBroadcast(SDKInstance GameLink, String Topic, String JsonString);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SubscribeToDatastream")]
         public static extern UInt16 SubscribeToDatastream(SDKInstance GameLink);
@@ -370,8 +407,8 @@ namespace MuxyGameLink.Imports
         public static extern Int32 Schema_Transaction_GetCost(Schema.TransactionResponse TPBResp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_Transaction_GetTimestamp")]
         public static extern Int64 Schema_Transaction_GetTimestamp(Schema.TransactionResponse TPBResp);
-        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_Transaction_GetAdditionalJson")]
-        public static extern AllocatedStringPtr Schema_Transaction_GetAdditionalJson(Schema.TransactionResponse TPBResp);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_Transaction_GetJson")]
+        public static extern AllocatedStringPtr Schema_Transaction_GetJson(Schema.TransactionResponse TPBResp);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetOutstandingTransactions")]
         public static extern RequestId GetOutstandingTransactions(SDKInstance GameLink, String SKU, GetOutstandingTransactionsDelegate Resp, IntPtr UserData);
