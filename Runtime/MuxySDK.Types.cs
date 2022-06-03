@@ -11,6 +11,29 @@ namespace MuxyGameLink
         Sandbox = 1
     };
 
+    public enum Operation
+    {
+        Add = 0,
+        Remove,
+        Replace,
+        Copy,
+        Move,
+        Test
+    };
+
+    public enum StateTarget
+    {
+        Channel = 0,
+        Extension
+    };
+
+    public enum ConfigTarget
+    {
+        Channel = 0,
+        Extension,
+        Combined
+    };
+
     public class Error
     {
         public Error(NativeError Obj)

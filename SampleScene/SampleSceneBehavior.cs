@@ -251,8 +251,7 @@ public class SampleSceneBehavior : MonoBehaviour
     public void OnClickSendBroadcast()
     {
         LogResult("Sent broadcast", ColSuccess);
-        // SDK.STATE_TARGET_CHANNEL / SDK.STATE_TARGET_EXTENSION
-        GameLink.SendBroadcast(BroadcastTargetDropdown.options[BroadcastTargetDropdown.value].text, BroadcastInput.text);
+        //GameLink.SendBroadcast(BroadcastTargetDropdown.options[BroadcastTargetDropdown.value].text, BroadcastInput.text);
     }
 
     public void OnClickSubscribeToDatastream()
@@ -284,6 +283,14 @@ public class SampleSceneBehavior : MonoBehaviour
         });
     }
 
+    MuxyGameLink.StateTarget GetStateTargetForString(String s)
+    {
+        if (s == "channel")
+        {
+            return MuxyGameLink.StateTarget.Channel;
+        }
+        return MuxyGameLink.StateTarget.Extension;
+    }
     public void OnClickDetachDatastream()
     {
         LogResult("Detached OnDatastream: " + OnDatastreamId, ColWhite);
@@ -292,34 +299,38 @@ public class SampleSceneBehavior : MonoBehaviour
 
     public void OnClickSetState()
     {
-        String Target = StateTargetDropdown.options[StateTargetDropdown.value].text;
-        LogResult("Set State (" + Target + ")", ColSuccess);
+        String TargetText = StateTargetDropdown.options[StateTargetDropdown.value].text;
+        LogResult("Set State (" + TargetText + ")", ColSuccess);
+        StateTarget Target = GetStateTargetForString(TargetText);
         GameLink.SetState(Target, StateInput.text);
     }
 
     public void OnClickGetState()
     {
-        String Target = StateTargetDropdown.options[StateTargetDropdown.value].text;
-        LogResult("Get State (" + Target + ")", ColSuccess);
+        String TargetText = StateTargetDropdown.options[StateTargetDropdown.value].text;
+        LogResult("Get State (" + TargetText + ")", ColSuccess);
+        StateTarget Target = GetStateTargetForString(TargetText);
 
-        GameLink.GetState(Target, 
+        GameLink.GetState(Target,
         (Response) =>
         {
-            LogResult("GetState JSON (" + Target + "): " + Response.Json, ColWhite, true);
+            LogResult("GetState JSON (" + TargetText + "): " + Response.Json, ColWhite, true);
         });
     }
 
     public void OnClickSubscribeToStateUpdates()
     {
-        String Target = StateTargetDropdown.options[StateTargetDropdown.value].text;
-        LogResult("Subscribed To State Updates (" + Target + ")", ColSuccess);
+        String TargetText = StateTargetDropdown.options[StateTargetDropdown.value].text;
+        LogResult("Subscribed To State Updates (" + TargetText + ")", ColSuccess);
+        StateTarget Target = GetStateTargetForString(TargetText);
         GameLink.SubscribeToStateUpdates(Target);
     }
 
     public void OnClickUnsubscribeFromStateUpdates()
     {
-        String Target = StateTargetDropdown.options[StateTargetDropdown.value].text;
-        LogResult("Unsubscribed From State Updates (" + Target + ")", ColWhite);
+        String TargetText = StateTargetDropdown.options[StateTargetDropdown.value].text;
+        LogResult("Unsubscribed From State Updates (" + TargetText + ")", ColWhite);
+        StateTarget Target = GetStateTargetForString(TargetText);
         GameLink.SubscribeToStateUpdates(Target);
     }
 

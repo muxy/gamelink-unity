@@ -7,9 +7,6 @@ namespace MuxyGameLink
 {
     public class SDK
     {
-        public static String STATE_TARGET_CHANNEL = "channel";
-        public static String STATE_TARGET_EXTENSION = "extension";
-
         /// <summary> Generates connection address for Websocket </summary>
         /// <param name="Stage"> Stage Production or Sandbox </param>
         /// <returns> Connection address </returns>
@@ -54,16 +51,17 @@ namespace MuxyGameLink
         /// <returns> RequestId </returns>
         public UInt16 AuthenticateWithRefreshToken(string RefreshToken, AuthenticationCallback Callback)
         {
-            GCHandle Handle;
+            GCHandle? Handle = null;
             AuthenticateResponseDelegate WrapperCallback = ((UserData, AuthResp) =>
             {
                 AuthenticationResponse Response = new AuthenticationResponse(AuthResp);
                 Callback(Response);
-                Handle.Free();
+                Handle?.Free();
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
             return Imported.AuthenticateWithRefreshToken(this.Instance, this.ClientId, RefreshToken, WrapperCallback, IntPtr.Zero);
+     
         }
 
         /// <summary> Authenticate with a PIN </summary>
@@ -72,12 +70,12 @@ namespace MuxyGameLink
         /// <returns> RequestId </returns>
         public UInt16 AuthenticateWithPIN(string PIN, AuthenticationCallback Callback)
         {
-            GCHandle Handle;
+            GCHandle? Handle = null;
             AuthenticateResponseDelegate WrapperCallback = ((UserData, AuthResp) =>
             {
                 AuthenticationResponse Response = new AuthenticationResponse(AuthResp);
                 Callback(Response);
-                Handle.Free();
+                Handle?.Free();
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
@@ -138,9 +136,9 @@ namespace MuxyGameLink
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <param name="Json"> Json message to be stored in state </param>
         /// <returns> RequestId </returns>
-        public UInt16 SetState(string Target, string Json)
+        public UInt16 SetState(StateTarget Target, string Json)
         {
-            return Imported.SetState(this.Instance, Target, Json);
+            return Imported.SetState(this.Instance, (Int32)Target, Json);
         }
 
         public delegate void GetStateCallback(StateResponse Response);
@@ -148,18 +146,18 @@ namespace MuxyGameLink
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <param name="Callback"> Callback to be called with state info</param>
         /// <returns> RequestId </returns>
-        public UInt16 GetState(string Target, GetStateCallback Callback)
+        public UInt16 GetState(StateTarget Target, GetStateCallback Callback)
         {
-            GCHandle Handle;
+            GCHandle? Handle = null;
             StateGetDelegate WrapperCallback = ((UserData, StateResp) =>
             {
                 StateResponse Response = new StateResponse(StateResp);
                 Callback(Response);
-                Handle.Free();
+                Handle?.Free();
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.GetState(this.Instance, Target, WrapperCallback, IntPtr.Zero);
+            return Imported.GetState(this.Instance, (Int32)Target, WrapperCallback, IntPtr.Zero);
         }
 
         /// <summary> Set target state with integer </summary>
@@ -168,9 +166,9 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="Value"> Integer to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateStateWithInteger(string Target, string Operation, string Path, Int64 Value)
+        public UInt16 UpdateStateWithInteger(StateTarget Target, Operation Operation, string Path, Int64 Value)
         {
-            return Imported.UpdateStateWithInteger(this.Instance, Target, Operation, Path, Value);
+            return Imported.UpdateStateWithInteger(this.Instance, (Int32)Target, (Int32)Operation, Path, Value);
         }
 
         /// <summary> Set target state with doule </summary>
@@ -179,9 +177,9 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="Value"> Double to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateStateWithDouble(string Target, string Operation, string Path, Double Value)
+        public UInt16 UpdateStateWithDouble(StateTarget Target, Operation Operation, string Path, Double Value)
         {
-            return Imported.UpdateStateWithDouble(this.Instance, Target, Operation, Path, Value);
+            return Imported.UpdateStateWithDouble(this.Instance, (Int32)Target, (Int32)Operation, Path, Value);
         }
 
         /// <summary> Set target state with string </summary>
@@ -190,9 +188,9 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="Value"> String to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateStateWithString(string Target, string Operation, string Path, string Value)
+        public UInt16 UpdateStateWithString(StateTarget Target, Operation Operation, string Path, string Value)
         {
-            return Imported.UpdateStateWithString(this.Instance, Target, Operation, Path, Value);
+            return Imported.UpdateStateWithString(this.Instance, (Int32)Target, (Int32)Operation, Path, Value);
         }
 
         /// <summary> Set target state with json literal </summary>
@@ -201,9 +199,9 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="Value"> Json literal to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateStateWithLiteral(string Target, string Operation, string Path, string JsonLiteral)
+        public UInt16 UpdateStateWithLiteral(StateTarget Target, Operation Operation, string Path, string JsonLiteral)
         {
-            return Imported.UpdateStateWithLiteral(this.Instance, Target, Operation, Path, JsonLiteral);
+            return Imported.UpdateStateWithLiteral(this.Instance, (Int32)Target, (Int32)Operation, Path, JsonLiteral);
         }
 
         /// <summary> Set target state with null </summary>
@@ -211,33 +209,33 @@ namespace MuxyGameLink
         /// <param name="Operation"> Patch operation </param>
         /// <param name="Path"> Json Pointer </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateStateWithNull(string Target, string Operation, string Path)
+        public UInt16 UpdateStateWithNull(StateTarget Target, Operation Operation, string Path)
         {
-            return Imported.UpdateStateWithNull(this.Instance, Target, Operation, Path);
+            return Imported.UpdateStateWithNull(this.Instance, (Int32)Target, (Int32)Operation, Path);
         }
 
         /// <summary> Updates target state with PatchList </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateStateWithPatchList(string Target, PatchList PList)
+        public UInt16 UpdateStateWithPatchList(StateTarget Target, PatchList PList)
         {
-            return Imported.UpdateStateWithPatchList(this.Instance, Target, PList.Obj);
+            return Imported.UpdateStateWithPatchList(this.Instance, (Int32)Target, PList.Obj);
         }
 
         /// <summary> Subscribe to state updates, a callback must first be set with OnStateUpdate </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <returns> RequestId </returns>
-        public UInt16 SubscribeToStateUpdates(string Target)
+        public UInt16 SubscribeToStateUpdates(StateTarget Target)
         {
-            return Imported.SubscribeToStateUpdates(this.Instance, Target);
+            return Imported.SubscribeToStateUpdates(this.Instance, (Int32)Target);
         }
 
         /// <summary> Unsubscribe from state updates </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <returns> RequestId </returns>
-        public UInt16 UnsubscribeFromStateUpdates(string Target)
+        public UInt16 UnsubscribeFromStateUpdates(StateTarget Target)
         {
-            return Imported.UnsubscribeFromStateUpdates(this.Instance, Target);
+            return Imported.UnsubscribeFromStateUpdates(this.Instance, (Int32)Target);
         }
 
         public delegate void UpdateStateCallback(StateUpdate Response);
@@ -288,18 +286,19 @@ namespace MuxyGameLink
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <param name="Callback"> Callback to be called to receive config data </param>
         /// <returns> RequestId </returns>
-        public UInt16 GetConfig(string Target, GetConfigCallback Callback)
+        public UInt16 GetConfig(ConfigTarget Target, GetConfigCallback Callback)
         {
-            GCHandle Handle;
+            GCHandle? Handle = null;
+
             ConfigGetDelegate WrapperCallback = ((UserData, ConfigResp) =>
             {
                 ConfigResponse Response = new ConfigResponse(ConfigResp);
                 Callback(Response);
-                Handle.Free();
+                Handle?.Free();
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.GetConfig(this.Instance, Target, WrapperCallback, IntPtr.Zero);
+            return Imported.GetConfig(this.Instance, (Int32)Target, WrapperCallback, IntPtr.Zero);
         }
 
         /// <summary> Update config with integer </summary>
@@ -307,9 +306,9 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="Value"> Integer to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateChannelConfigWithInteger(string Operation, string Path, Int64 Value)
+        public UInt16 UpdateChannelConfigWithInteger(Operation Operation, string Path, Int64 Value)
         {
-            return Imported.UpdateChannelConfigWithInteger(this.Instance, Operation, Path, Value);
+            return Imported.UpdateChannelConfigWithInteger(this.Instance, (Int32)Operation, Path, Value);
         }
 
         /// <summary> Update config with double </summary>
@@ -317,9 +316,9 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="Value"> Double to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateChannelConfigWithDouble(string Operation, string Path, Double Value)
+        public UInt16 UpdateChannelConfigWithDouble(Operation Operation, string Path, Double Value)
         {
-            return Imported.UpdateChannelConfigWithDouble(this.Instance, Operation, Path, Value);
+            return Imported.UpdateChannelConfigWithDouble(this.Instance, (Int32)Operation, Path, Value);
         }
 
         /// <summary> Update config with string </summary>
@@ -327,9 +326,9 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="Value"> String to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateChannelConfigWithString(string Operation, string Path, string Value)
+        public UInt16 UpdateChannelConfigWithString(Operation Operation, string Path, string Value)
         {
-            return Imported.UpdateChannelConfigWithString(this.Instance, Operation, Path, Value);
+            return Imported.UpdateChannelConfigWithString(this.Instance, (Int32)Operation, Path, Value);
         }
 
         /// <summary> Update config with json literal </summary>
@@ -337,34 +336,34 @@ namespace MuxyGameLink
         /// <param name="Path"> Json Pointer </param>
         /// <param name="JsonLiteral"> Json literal to be set </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateChannelConfigWithLiteral(string Operation, string Path, string JsonLiteral)
+        public UInt16 UpdateChannelConfigWithLiteral(Operation Operation, string Path, string JsonLiteral)
         {
-            return Imported.UpdateChannelConfigWithLiteral(this.Instance, Operation, Path, JsonLiteral);
+            return Imported.UpdateChannelConfigWithLiteral(this.Instance, (Int32)Operation, Path, JsonLiteral);
         }
 
         /// <summary> Update config with null </summary>
         /// <param name="Operation"> Patch operation </param>
         /// <param name="Path"> Json Pointer </param>
         /// <returns> RequestId </returns>
-        public UInt16 UpdateChannelConfigWithNull(string Operation, string Path)
+        public UInt16 UpdateChannelConfigWithNull(Operation Operation, string Path)
         {
-            return Imported.UpdateChannelConfigWithNull(this.Instance, Operation, Path);
+            return Imported.UpdateChannelConfigWithNull(this.Instance, (Int32)Operation, Path);
         }
 
         /// <summary> Subscribe to configuration changes, a callback must first be set with OnConfigUpdate </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <returns> RequestId </returns>
-        public UInt16 SubscribeToConfigurationChanges(string Target)
+        public UInt16 SubscribeToConfigurationChanges(ConfigTarget Target)
         {
-            return Imported.SubscribeToConfigurationChanges(this.Instance, Target);
+            return Imported.SubscribeToConfigurationChanges(this.Instance, (Int32)Target);
         }
 
         /// <summary> Unsubscribe from configuration changes </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <returns> RequestId </returns>
-        public UInt16 UnsubscribeFromConfigurationChanges(string Target)
+        public UInt16 UnsubscribeFromConfigurationChanges(ConfigTarget Target)
         {
-            return Imported.UnsubscribeFromConfigurationChanges(this.Instance, Target);
+            return Imported.UnsubscribeFromConfigurationChanges(this.Instance, (Int32)Target);
         }
 
         public delegate void UpdateConfigCallback(ConfigUpdate Response);
@@ -537,12 +536,12 @@ namespace MuxyGameLink
         /// <returns> RequestId </returns>
         public UInt16 GetOutstandingTransactions(String SKU, GetOutstandingTransactionsCallback Callback)
         {
-            GCHandle Handle;
+            GCHandle? Handle = null;
             GetOutstandingTransactionsDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetOutstandingTransactionsResponse Response) =>
             {
                 OutstandingTransactions Converted = new OutstandingTransactions(Response);
                 Callback(Converted);
-                Handle.Free();
+                Handle?.Free();
             });
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
             return Imported.GetOutstandingTransactions(this.Instance, SKU, WrapperCallback, IntPtr.Zero);
@@ -619,15 +618,16 @@ namespace MuxyGameLink
         /// <returns> RequestId </returns>
         public UInt16 GetPoll(String PollId, GetPollCallback Callback)
         {
-            GCHandle Handle;
+            GCHandle? Handle = null;
             GetPollResponseDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetPollResponse Response) =>
             {
                 GetPollResponse Converted = new GetPollResponse(Response);
                 Callback(Converted);
-                Handle.Free();
+                Handle?.Free();
             });
+
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.GetPoll(this.Instance, PollId, WrapperCallback, IntPtr.Zero);
+            return Imported .GetPoll(this.Instance, PollId, WrapperCallback, IntPtr.Zero);
         }
 
         public delegate void PollUpdateResponseCallback(PollUpdateResponse PResp);
@@ -675,44 +675,44 @@ namespace MuxyGameLink
                 Imported.PatchList_Kill(this.Obj);
             }
 
-            public void UpdateStateWithInteger(String Operation, String Path, Int64 Val)
+            public void UpdateStateWithInteger(Operation Operation, String Path, Int64 Val)
             {
-                Imported.PatchList_UpdateStateWithInteger(this.Obj, Operation, Path, Val);
+                Imported.PatchList_UpdateStateWithInteger(this.Obj, (Int32)Operation, Path, Val);
             }
 
-            public void UpdateStateWithDouble(String Operation, String Path, double Val)
+            public void UpdateStateWithDouble(Operation Operation, String Path, double Val)
             {
-                Imported.PatchList_UpdateStateWithDouble(this.Obj, Operation, Path, Val);
+                Imported.PatchList_UpdateStateWithDouble(this.Obj, (Int32)Operation, Path, Val);
             }
 
-            public void UpdateStateWithBoolean(String Operation, String Path, bool Val)
+            public void UpdateStateWithBoolean(Operation Operation, String Path, bool Val)
             {
-                Imported.PatchList_UpdateStateWithBoolean(this.Obj, Operation, Path, Val);
+                Imported.PatchList_UpdateStateWithBoolean(this.Obj, (Int32)Operation, Path, Val);
             }
 
-            public void UpdateStateWithString(String Operation, String Path, String Val)
+            public void UpdateStateWithString(Operation Operation, String Path, String Val)
             {
-                Imported.PatchList_UpdateStateWithString(this.Obj, Operation, Path, Val);
+                Imported.PatchList_UpdateStateWithString(this.Obj, (Int32)Operation, Path, Val);
             }
 
-            public void UpdateStateWithLiteral(String Operation, String Path, String Val)
+            public void UpdateStateWithLiteral(Operation Operation, String Path, String Val)
             {
-                Imported.PatchList_UpdateStateWithLiteral(this.Obj, Operation, Path, Val);
+                Imported.PatchList_UpdateStateWithLiteral(this.Obj, (Int32)Operation, Path, Val);
             }
 
-            public void UpdateStateWithNull(String Operation, String Path)
+            public void UpdateStateWithNull(Operation Operation, String Path)
             {
-                Imported.PatchList_UpdateStateWithNull(this.Obj, Operation, Path);
+                Imported.PatchList_UpdateStateWithNull(this.Obj, (Int32)Operation, Path);
             }
 
-            public void UpdateStateWithJson(String Operation, String Path, String Val)
+            public void UpdateStateWithJson(Operation Operation, String Path, String Val)
             {
-                Imported.PatchList_UpdateStateWithJson(this.Obj, Operation, Path, Val);
+                Imported.PatchList_UpdateStateWithJson(this.Obj, (Int32)Operation, Path, Val);
             }
 
-            public void UpdateStateWithEmptyArray(String Operation, String Path)
+            public void UpdateStateWithEmptyArray(Operation Operation, String Path)
             {
-                Imported.PatchList_UpdateStateWithEmptyArray(this.Obj, Operation, Path);
+                Imported.PatchList_UpdateStateWithEmptyArray(this.Obj, (Int32)Operation, Path);
             }
             public bool Empty()
             {
