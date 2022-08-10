@@ -29,6 +29,7 @@ namespace MuxyGameLink
             OnStateUpdateHandles = new Dictionary<UInt32, GCHandle>();
             OnPollUpdateHandles = new Dictionary<UInt32, GCHandle>();
             OnConfigUpdateHandles = new Dictionary<UInt32, GCHandle>();
+            OnMatchmakingUpdateHandles = new Dictionary<UInt32, GCHandle>();
         }
 
         ~SDK()
@@ -587,6 +588,17 @@ namespace MuxyGameLink
             return Imported.CreatePoll(this.Instance, PollId, Prompt, Options.ToArray(), (UInt32)Options.Count);
         }
 
+        /// <summary> Create Poll with prompt and options along with extra configuration</summary>
+        /// <param name="PollId"> Id to refer to this poll later </param>
+        /// <param name="Prompt"> Message prompt for the poll </param>
+        /// <param name="Config"> Poll configuration options </param>
+        /// <param name="Options"> List of poll options to choose from </param>
+        /// <returns> RequestId </returns>
+        public UInt16 CreatePollWithConfiguration(String PollId, String Prompt, Imported.PollConfiguration Config, List<String> Options)
+        {
+            return Imported.CreatePollWithConfiguration(this.Instance, PollId, Prompt, ref Config, Options.ToArray(), (UInt32)Options.Count);
+        }
+
         /// <summary> Subscribe to Poll, a callback must first be set with OnPollUpdate </summary>
         /// <param name="PollId"> Poll Id to subscribe to, given from CreatePoll </param>
         /// <returns> RequestId </returns>
@@ -631,7 +643,7 @@ namespace MuxyGameLink
         }
 
         public delegate void PollUpdateResponseCallback(PollUpdateResponse PResp);
-        /// <summary> Sets callback for Poll Updates, requires call to SubscribeToPoll to begin receiving purchase updates </summary>
+        /// <summary> Sets callback for Poll Updates, requires call to SubscribeToPoll to begin receiving poll updates </summary>
         /// <param name="Callback"> Callback that will be called when a poll update occurs </param>
         /// <returns> Handle to reference callback later for things like detaching </returns>
         public UInt32 OnPollUpdate(PollUpdateResponseCallback Callback)
@@ -659,6 +671,67 @@ namespace MuxyGameLink
             {
                 GC.Free();
                 OnPollUpdateHandles.Remove(Handle);
+            }
+        }
+
+        #endregion
+
+        #region Matchmaking
+        public delegate void MatchmakingUpdateCallback(MatchmakingUpdate MResp);
+        /// <summary> Subscribe to MatchmakingQueueInvite, a callback must first be set with OnMatchmakingQueueInvite </summary>
+        /// <returns> RequestId </returns>
+        public UInt16 SubscribeToMatchmakingQueueInvite()
+        {
+            return Imported.SubscribeToMatchmakingQueueInvite(this.Instance);
+        }
+        /// <summary> Unsubscribe from MatchmakingQueueInvite </summary>
+        /// <returns> RequestId </returns>
+        public UInt16 UnsubscribeFromMatchmakingQueueInvite()
+        {
+            return Imported.UnsubscribeFromMatchmakingQueueInvite(this.Instance);
+        }
+        /// <summary> Clears the current matchmaking queue </summary>
+        /// <returns> RequestId </returns>
+        public UInt16 ClearMatchmakingQueue()
+        {
+            return Imported.ClearMatchmakingQueue(this.Instance);
+        }
+        /// <summary> Removes specified entry from matchmaking queue </summary>
+        /// <param name="Id"> Id of the entry to remove </param>
+        /// <returns> ReturnId </returns>
+        public UInt16 RemoveMatchmakingEntry(String Id)
+        {
+            return Imported.RemoveMatchmakingEntry(this.Instance, Id);
+        }
+
+        /// <summary> Sets callback for QueueInvites, requires call to SubscribeToMatchmakingQueueInvite to begin receiving queue updates </summary>
+        /// <param name="Callback"> Callback that will be called when a queue invite occurs </param>
+        /// <returns> Handle to reference callback later for things like detaching </returns>
+        public UInt32 OnMatchmakingQueueInvite(MatchmakingUpdateCallback Callback)
+        {
+            MatchmakingUpdateDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.MatchmakingUpdateResponse MResp) =>
+            {
+                MatchmakingUpdate Response = new MatchmakingUpdate(MResp);
+                Callback(Response);
+            });
+
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            UInt32 Result = Imported.OnMatchmakingQueueInvite(this.Instance, WrapperCallback, IntPtr.Zero);
+
+            OnMatchmakingUpdateHandles.Add(Result, Handle);
+            return Result;
+        }
+
+        /// <summary> Detach callback for matchmaking queue invite </summary>
+        /// <param name="Handle"> Handle to detach </param>
+        public void DetachOnMatchmakingQueueInvite(UInt32 Handle)
+        {
+            Imported.DetachOnMatchmakingQueueInvite(this.Instance, Handle);
+            GCHandle GC = OnMatchmakingUpdateHandles[Handle];
+            if (GC != null)
+            {
+                GC.Free();
+                OnMatchmakingUpdateHandles.Remove(Handle);
             }
         }
 
@@ -752,6 +825,8 @@ namespace MuxyGameLink
         }
         #endregion
 
+
+
         #region Members
         public String ClientId {get; set;}
 
@@ -764,6 +839,7 @@ namespace MuxyGameLink
         private Dictionary<UInt32, GCHandle> OnStateUpdateHandles;
         private Dictionary<UInt32, GCHandle> OnPollUpdateHandles;
         private Dictionary<UInt32, GCHandle> OnConfigUpdateHandles;
+        private Dictionary<UInt32, GCHandle> OnMatchmakingUpdateHandles;
         #endregion
 
     }

@@ -348,5 +348,30 @@ namespace MuxyGameLink
         public List<Int32> Results { get; private set; }
     }
 
+    public class MatchmakingUpdate : HasError
+    {
+        public MatchmakingUpdate(Imports.Schema.MatchmakingUpdateResponse Obj)
+            : base(Obj.Obj)
+        {
+            if (GetFirstError() != null)
+            {
+                return;
+            }
+
+            this.TwitchUsername = NativeString.StringFromUTF8(Imported.MatchmakingUpdate_GetTwitchUsername(Obj));
+            this.TwitchID = NativeString.StringFromUTF8(Imported.MatchmakingUpdate_GetTwitchID(Obj));
+            this.Timestamp = Imported.MatchmakingUpdate_GetTimestamp(Obj);
+            this.IsFollower = Imported.MatchmakingUpdate_IsFollower(Obj);
+            this.SubscriptionTier = Imported.MatchmakingUpdate_GetSubscriptionTier(Obj);
+            this.BitsSpent = Imported.MatchmakingUpdate_GetBitsSpent(Obj);
+        }
+
+        public String TwitchUsername { get; private set; }
+        public String TwitchID { get; private set; }
+        public Int64 Timestamp { get; private set; }
+        public bool IsFollower { get; private set; }
+        public int SubscriptionTier { get; private set; }
+        public int BitsSpent { get; private set; }
+    }
 
 }
