@@ -533,13 +533,15 @@ namespace MuxyGameLink.Imports
         public static extern UInt32 OnMatchmakingQueueInvite(SDKInstance GameLink, MatchmakingUpdateDelegate Callback, VoidPtr UserData);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_DetachOnMatchmakingQueueInvite")]
         public static extern UInt16 DetachOnMatchmakingQueueInvite(SDKInstance GameLink, UInt32 Id);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetData")]
+        public static extern AllocatedStringPtr MatchmakingUpdate_GetData(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetTwitchUsername")]
         public static extern StringPtr MatchmakingUpdate_GetTwitchUsername(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetTwitchID")]
         public static extern StringPtr MatchmakingUpdate_GetTwitchID(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetTimestamp")]
         public static extern Int64 MatchmakingUpdate_GetTimestamp(Schema.MatchmakingUpdateResponse Resp);
-        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_IsFollower")]
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetIsFollower")]
         public static extern bool MatchmakingUpdate_IsFollower(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetSubscriptionTier")]
         public static extern int MatchmakingUpdate_GetSubscriptionTier(Schema.MatchmakingUpdateResponse Resp);

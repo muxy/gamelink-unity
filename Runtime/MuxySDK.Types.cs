@@ -358,6 +358,7 @@ namespace MuxyGameLink
                 return;
             }
 
+            this.Data = NativeString.StringFromUTF8(Imported.MatchmakingUpdate_GetData(Obj));
             this.TwitchUsername = NativeString.StringFromUTF8(Imported.MatchmakingUpdate_GetTwitchUsername(Obj));
             this.TwitchID = NativeString.StringFromUTF8(Imported.MatchmakingUpdate_GetTwitchID(Obj));
             this.Timestamp = Imported.MatchmakingUpdate_GetTimestamp(Obj);
@@ -366,6 +367,7 @@ namespace MuxyGameLink
             this.BitsSpent = Imported.MatchmakingUpdate_GetBitsSpent(Obj);
         }
 
+        public String Data { get; private set; }
         public String TwitchUsername { get; private set; }
         public String TwitchID { get; private set; }
         public Int64 Timestamp { get; private set; }
