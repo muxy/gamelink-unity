@@ -15,14 +15,16 @@ namespace MuxyGameLink
             IntPtr Ptr = Imported.ProjectionWebsocketConnectionURL(this.ClientId, (Int32)Stage, "csharp", 0, 0, 1);
             return NativeString.StringFromUTF8AndDeallocate(Ptr);
         }
-        
+
         /// <summary> Constructs the SDK </summary>
         /// <param name="ClientId"> Your given Muxy ClientId </param>
-        public SDK(String ClientId)
+        /// <param name="GameId"> Your Twitch GameId </param>
+        public SDK(String ClientId, String GameId)
         {
             this.Instance = Imported.Make();
 
             this.ClientId = ClientId;
+            this.GameId = GameId;  
 
             OnDatastreamHandles = new Dictionary<UInt32, GCHandle>();
             OnTransactionHandles = new Dictionary<UInt32, GCHandle>();
@@ -30,6 +32,13 @@ namespace MuxyGameLink
             OnPollUpdateHandles = new Dictionary<UInt32, GCHandle>();
             OnConfigUpdateHandles = new Dictionary<UInt32, GCHandle>();
             OnMatchmakingUpdateHandles = new Dictionary<UInt32, GCHandle>();
+        }
+
+        /// <summary> Constructs the SDK </summary>
+        /// <param name="ClientId"> Your given Muxy ClientId </param>
+        public SDK(String ClientId)
+        {
+            SDK(ClientId);
         }
 
         ~SDK()
@@ -61,7 +70,7 @@ namespace MuxyGameLink
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.AuthenticateWithRefreshToken(this.Instance, this.ClientId, RefreshToken, WrapperCallback, IntPtr.Zero);
+            return Imported.AuthenticateWithRefreshToken(this.Instance, this.ClientId, this.GameId, RefreshToken, WrapperCallback, IntPtr.Zero);
      
         }
 
@@ -80,7 +89,7 @@ namespace MuxyGameLink
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.AuthenticateWithPIN(this.Instance, this.ClientId, PIN, WrapperCallback, IntPtr.Zero);
+            return Imported.AuthenticateWithPIN(this.Instance, this.ClientId, this.GameId, PIN, WrapperCallback, IntPtr.Zero);
         }
 
         public User User
@@ -829,6 +838,7 @@ namespace MuxyGameLink
 
         #region Members
         public String ClientId {get; set;}
+        public String GameId { get; set; }
 
         private SDKInstance Instance;
         private User CachedUserInstance;

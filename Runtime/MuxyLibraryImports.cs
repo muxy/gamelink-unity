@@ -192,12 +192,12 @@ namespace MuxyGameLink.Imports
         #region Authentication
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_AuthenticateWithPIN")]
         public static extern UInt16 AuthenticateWithPIN(SDKInstance GameLink,
-                                                                   String ClientId, String PIN,
+                                                                   String ClientId, String GameId, String PIN,
                                                                    AuthenticateResponseDelegate Callback,
                                                                    VoidPtr UserData);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_AuthenticateWithRefreshToken")]
         public static extern UInt16 AuthenticateWithRefreshToken(SDKInstance GameLink,
-                                                                   String ClientId, String RefreshToken,
+                                                                   String ClientId, String GameId, String RefreshToken,
                                                                    AuthenticateResponseDelegate Callback,
                                                                    VoidPtr UserData);
 
