@@ -38,7 +38,7 @@ namespace MuxyGameLink
         /// <param name="ClientId"> Your given Muxy ClientId </param>
         public SDK(String ClientId)
         {
-            SDK(ClientId);
+            SDK(ClientId, "");
         }
 
         ~SDK()
