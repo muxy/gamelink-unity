@@ -61,6 +61,11 @@ namespace MuxyGameLink.Imports
             public IntPtr Obj;
         }
 
+        public struct MatchmakingUpdateResponse
+        {
+            public IntPtr Obj;
+        }
+
         public struct GetOutstandingTransactionsResponse
         {
             public IntPtr Obj;
@@ -95,6 +100,7 @@ namespace MuxyGameLink.Imports
         {
             public IntPtr Obj;
         }
+
     }
 
     public class NativeString
@@ -142,6 +148,8 @@ namespace MuxyGameLink.Imports
     public delegate void GetOutstandingTransactionsDelegate(VoidPtr UserData, Schema.GetOutstandingTransactionsResponse Resp);
 
     public delegate void DebugMessageDelegate(VoidPtr UserData, [MarshalAs(UnmanagedType.LPStr)] String Message);
+
+    public delegate void MatchmakingUpdateDelegate(VoidPtr UserData, Schema.MatchmakingUpdateResponse MatchmakingUpdate);
 
     public delegate void GetPollResponseDelegate(VoidPtr UserData, Schema.GetPollResponse PollResp);
     public delegate void PollUpdateResponseDelegate(VoidPtr UserData, Schema.PollUpdateResponse PollResp);
@@ -425,8 +433,41 @@ namespace MuxyGameLink.Imports
         #endregion
 
         #region Polling 
+        public struct PollConfiguration
+        {
+            /// When userIdVoting is true, only users that have shared their ID will
+            /// be able to vote.
+            public bool userIdVoting;
+
+            /// distinctOptionsPerUser controls how many options a user can vote for.
+            /// Must be in the range [1, 258].
+            public int distinctOptionsPerUser;
+
+            /// totalVotesPerUser controls how many votes any user can cast.
+            /// Must be in the range [1, 1024]
+            public int totalVotesPerUser;
+
+            /// votesPerOption controls how many votes per option a user can cast.
+            /// Must be in the range [1, 1024]
+            public int votesPerOption;
+
+            /// When disabled is true, the poll will not accept any votes.
+            public bool disabled;
+
+            /// startsAt should be a unix timestamp, in seconds, at which point the poll
+            /// will become enabled and will be able to be voted on.
+            /// If no startAt time is desired, set this to 0.
+            public Int64 startsAt;
+
+            /// endsAt shoudl be a unix timestamp, in seconds, at which point the poll
+            /// will become disabled.
+            /// If no endsAt time is desired, set this to 0.
+            public Int64 endsAt;
+        };
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_CreatePoll")]
         public static extern RequestId CreatePoll(SDKInstance GameLink, String PollId, String Prompt, [In] String[] Options, UInt32 OptionsCount);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_CreatePollWithConfiguration")]
+        public static extern RequestId CreatePollWithConfiguration(SDKInstance GameLink, String PollId, String Prompt, ref PollConfiguration Config, [In] String[] Options, UInt32 OptionsCount);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SubscribeToPoll")]
         public static extern RequestId SubscribeToPoll(SDKInstance GameLink, String PollId);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UnsubscribeFromPoll")]
@@ -477,6 +518,35 @@ namespace MuxyGameLink.Imports
         public static extern double Schema_PollUpdateResponse_GetSum(Schema.PollUpdateResponse PResp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_PollUpdateResponse_GetCount")]
         public static extern Int32 Schema_PollUpdateResponse_GetCount(Schema.PollUpdateResponse PResp);
+        #endregion
+
+        #region Matchmaking
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SubscribeToMatchmakingQueueInvite")]
+        public static extern UInt16 SubscribeToMatchmakingQueueInvite(SDKInstance GameLink);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_UnsubscribeFromMatchmakingQueueInvite")]
+        public static extern UInt16 UnsubscribeFromMatchmakingQueueInvite(SDKInstance GameLink);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ClearMatchmakingQueue")]
+        public static extern UInt16 ClearMatchmakingQueue(SDKInstance GameLink);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_RemoveMatchmakingEntry")]
+        public static extern UInt16 RemoveMatchmakingEntry(SDKInstance GameLink, [MarshalAs(UnmanagedType.LPStr)] String Id);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_OnMatchmakingQueueInvite")]
+        public static extern UInt32 OnMatchmakingQueueInvite(SDKInstance GameLink, MatchmakingUpdateDelegate Callback, VoidPtr UserData);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_DetachOnMatchmakingQueueInvite")]
+        public static extern UInt16 DetachOnMatchmakingQueueInvite(SDKInstance GameLink, UInt32 Id);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetData")]
+        public static extern AllocatedStringPtr MatchmakingUpdate_GetData(Schema.MatchmakingUpdateResponse Resp);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetTwitchUsername")]
+        public static extern StringPtr MatchmakingUpdate_GetTwitchUsername(Schema.MatchmakingUpdateResponse Resp);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetTwitchID")]
+        public static extern StringPtr MatchmakingUpdate_GetTwitchID(Schema.MatchmakingUpdateResponse Resp);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetTimestamp")]
+        public static extern Int64 MatchmakingUpdate_GetTimestamp(Schema.MatchmakingUpdateResponse Resp);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetIsFollower")]
+        public static extern bool MatchmakingUpdate_IsFollower(Schema.MatchmakingUpdateResponse Resp);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetSubscriptionTier")]
+        public static extern int MatchmakingUpdate_GetSubscriptionTier(Schema.MatchmakingUpdateResponse Resp);
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetBitsSpent")]
+        public static extern int MatchmakingUpdate_GetBitsSpent(Schema.MatchmakingUpdateResponse Resp);
         #endregion
     }
 }
