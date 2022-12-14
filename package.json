@@ -1,16 +1,16 @@
 {
 	"name": "com.muxy.gamelink",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"displayName": "Muxy GameLink",
 	"description": "Muxy GameLink is the easy solution to add Twitch viewer interactivity to your game and generate revenue through Twitch Bits. Muxy's GameLink provides the necessary tools for game developers to create audience-interactive mechanics in their games. When Twitch streamers have a Muxy GameLink extension active, viewers can directly interact with your game as it's played.",
-	"unity": "2019.1",
+	"unity": "2020.3",
 	"unityRelease": "0b5",
 	"documentationUrl": "https://docs.muxy.io/",
 	"changelogUrl": "",
 	"licensesUrl": "",
 	"author": {
-	  "name": "Muxy",
-	  "email": "team@muxy.io",
-	  "url": "https://www.muxy.io"
+		"name": "Muxy",
+		"email": "support+unity@muxy.io",
+		"url": "https://www.muxy.io"
 	}
-  }
+}
