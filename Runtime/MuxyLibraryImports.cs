@@ -101,6 +101,14 @@ namespace MuxyGameLink.Imports
             public IntPtr Obj;
         }
 
+        public struct GetDropsResponse
+        {
+            public IntPtr Obj;
+        }
+        public struct Drop
+        {
+            public IntPtr Obj;
+        }
     }
 
     public class NativeString
@@ -159,6 +167,8 @@ namespace MuxyGameLink.Imports
 
     public delegate void ConfigGetDelegate(VoidPtr UserData, Schema.ConfigResponse ConfigGet);
     public delegate void ConfigUpdateDelegate(VoidPtr UserData, Schema.ConfigUpdate ConfigUpdate);
+
+    public delegate void GetDropsResponseDelegate(VoidPtr UserData, Schema.GetDropsResponse Resp);
     public class Imported
     {
         // URL Derivation
@@ -547,6 +557,40 @@ namespace MuxyGameLink.Imports
         public static extern int MatchmakingUpdate_GetSubscriptionTier(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetBitsSpent")]
         public static extern int MatchmakingUpdate_GetBitsSpent(Schema.MatchmakingUpdateResponse Resp);
+        #endregion
+
+        #region Drops
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetDrops")]
+        public static extern UInt16 GetDrops(SDKInstance SDK, String Status, GetDropsResponseDelegate Callback, VoidPtr User);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ValidateDrop")]
+        public static extern UInt16 ValidateDrop(SDKInstance SDK, String DropId);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetDropsResponse_GetAt")]
+        public static extern Schema.Drop GetDropsResponse_GetAt(Schema.GetDropsResponse Resp, UInt64 Index);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetDropsResponse_GetCount")]
+        public static extern UInt64 GetDropsResponse_GetCount(Schema.GetDropsResponse Resp);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Drop_GetId")]
+        public static extern StringPtr Drop_GetId(Schema.Drop Drop);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Drop_GetBenefitId")]
+        public static extern StringPtr Drop_GetBenefitId(Schema.Drop Drop);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Drop_GetUserId")]
+        public static extern StringPtr Drop_GetUserId(Schema.Drop Drop);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Drop_GetStatus")]
+        public static extern StringPtr Drop_GetStatus(Schema.Drop Drop);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Drop_GetService")]
+        public static extern StringPtr Drop_GetService(Schema.Drop Drop);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Drop_GetUpdatedAt")]
+        public static extern StringPtr Drop_GetUpdatedAt(Schema.Drop Drop);
+
         #endregion
     }
 }
