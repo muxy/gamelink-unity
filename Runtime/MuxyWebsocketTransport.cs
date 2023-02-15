@@ -28,12 +28,11 @@ namespace MuxyGameLink
 
 		/// <summary>
 		///  Creates a websocket transport without an associated Gamelink instance or stage.
-		/// <param name="HandleMessagesInMainThread">If you are using Unity or an engine that doesn't work nicely with multithreading this should be set to true. If set to true, you must call Update() for GameLink to receive messages</param>
 		/// </summary>
-		public WebsocketTransport(bool HandleMessagesInMainThread)
+		public WebsocketTransport()
 		{
 			Websocket = new ClientWebSocket();
-			this.HandleMessagesInMainThread = HandleMessagesInMainThread;
+			this.HandleMessagesInMainThread = true;
 		}
 
 		/// <summary>
@@ -105,7 +104,7 @@ namespace MuxyGameLink
 		}
 
 		/// <summary>
-		///  Updates the Websocket Transport, it's only required to call this if you set HandleMessagesInMainThread to true when initializing the WebsocketTransport
+		///  Updates the Websocket Transport, this call is required to receive messages
 		/// </summary>
 		/// <param name="instance">The instance to use for sending and receiving messages</param>
 		public void Update(SDK instance)

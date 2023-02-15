@@ -92,7 +92,7 @@ public class SampleSceneBehavior : MonoBehaviour
         GameLinkSetup();
         UISetup();
 
-        Transport = new WebsocketTransport(true);
+        Transport = new WebsocketTransport();
         Transport.OpenAndRunInStage(GameLink, Stage.Sandbox);
     }
 
