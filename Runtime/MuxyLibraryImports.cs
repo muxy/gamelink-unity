@@ -237,7 +237,7 @@ namespace MuxyGameLink.Imports
         #endregion
 
         #region Errors
-        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_GetFirstError")]
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetFirstError")]
         public static extern NativeError Schema_GetFirstError(VoidPtr Resp);
         
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Error_IsValid")]
