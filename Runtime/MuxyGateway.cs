@@ -25,8 +25,8 @@ namespace MuxyGateway
         private GatewaySDK Instance;
         private string GameID;
 
-        public SDK(string GameID) 
-        { 
+        public SDK(string GameID)
+        {
             Instance = Imported.MGW_MakeSDK(GameID);
             this.GameID = GameID;
         }
@@ -35,8 +35,8 @@ namespace MuxyGateway
         public bool ReceiveMessage(String Message)
         {
             if (Message == null)
-            { 
-                return false; 
+            {
+                return false;
             }
 
             byte[] Bytes = Encoding.UTF8.GetBytes(Message);
