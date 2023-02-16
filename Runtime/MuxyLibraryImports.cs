@@ -124,9 +124,79 @@ namespace MuxyGameLink.Imports
 
         public struct MGW_GameMetadata
         {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
             public String GameName;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
             public String GameLogo;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
             public String Theme;
+        }
+
+        public struct MGW_GameText
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String Label;
+            
+            [MarshalAs(UnmanagedType.LPUTF8Str)] 
+            public String Value;
+            
+            [MarshalAs(UnmanagedType.LPUTF8Str)] 
+            public String Icon;
+        }
+
+        public struct MGW_Action
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String ID;
+
+            public Int32 Category;
+            public Int32 State;
+            public Int32 Impact;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String Name;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String Description;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String Icon;
+
+            public Int32 Count;
+        }
+
+        public struct MGW_PollUpdate
+        {
+            public Int32 Winner;
+            public Int32 WinningVoteCount;
+
+            public Int32[] Results;
+            public UInt64 ResultCount;
+
+            public Int32 Count;
+            public double Mean;
+            public bool IsFinal;
+        }
+
+        public delegate void GatewayPollUpdateDelegate(VoidPtr User, MGW_PollUpdate[] Update);
+
+        public struct MGW_PollConfiguration
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public string Prompt;
+
+            public Int32 Location;
+            public Int32 Mode;
+
+            public IntPtr Options;
+            public UInt64 OptionsCount;
+
+            public Int32 Duration;
+
+            public GatewayPollUpdateDelegate OnUpdate;
+            public VoidPtr User;
         }
     }
 
@@ -134,7 +204,7 @@ namespace MuxyGameLink.Imports
     {
         public static String StringFromUTF8(StringPtr Ptr, int Length)
         {
-            if (Ptr == null)
+            if (Ptr.Equals(StringPtr.Zero))
             {
                 return String.Empty;
             }
@@ -189,16 +259,16 @@ namespace MuxyGameLink.Imports
 
     public delegate void GatewayAuthenticateResponseDelegate(VoidPtr UserData, Schema.MGW_AuthenticateResponse[] Response);
     public delegate void GatewayForeachPayloadDelegate(VoidPtr UserData, Schema.MGW_Payload[] Payload);
-    public delegate void MGW_DebugMessageCallback(VoidPtr UserData, [MarshalAs(UnmanagedType.LPUTF8Str)] String Message);
+    public delegate void GatewayDebugMessageCallback(VoidPtr UserData, [MarshalAs(UnmanagedType.LPUTF8Str)] String Message);
 
     public class Imported
     {
         // URL Derivation
-        [DllImport("cgamelink.dll", EntryPoint="MuxyGameLink_ProjectionWebsocketConnectionURL")]
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ProjectionWebsocketConnectionURL")]
         public static extern AllocatedStringPtr ProjectionWebsocketConnectionURL(
-            [MarshalAs(UnmanagedType.LPStr)] String clientID, 
+            [MarshalAs(UnmanagedType.LPStr)] String clientID,
             Int32 stage,
-            [MarshalAs(UnmanagedType.LPStr)] String projection, 
+            [MarshalAs(UnmanagedType.LPStr)] String projection,
             int projectionMajor,
             int projectionMinor,
             int projectionPatch);
@@ -259,15 +329,15 @@ namespace MuxyGameLink.Imports
         #endregion
 
         #region Errors
-        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_GetFirstError")]
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_GetFirstError")]
         public static extern NativeError Schema_GetFirstError(VoidPtr Resp);
-        
+
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Error_IsValid")]
         public static extern bool Error_IsValid(NativeError Error);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Error_GetCode")]
         public static extern UInt32 Error_GetCode(NativeError Error);
-        
+
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Error_GetTitle")]
         public static extern StringPtr Error_GetTitle(NativeError Error);
 
@@ -360,7 +430,7 @@ namespace MuxyGameLink.Imports
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_ConfigResponse_GetConfigID")]
         public static extern StringPtr Schema_ConfigResponse_GetConfigID(Schema.ConfigResponse Response);
-        
+
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Schema_ConfigResponse_GetJson")]
         public static extern AllocatedStringPtr Schema_ConfigResponse_GetJson(Schema.ConfigResponse Response);
 
@@ -606,20 +676,41 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_HasPayloads")]
         public static extern bool MGW_SDK_HasPayloads(Schema.GatewaySDK SDK);
 
-        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ForeachPayload")]
-        public static extern void MGW_SDK_ForeachPayload(Schema.GatewaySDK SDK, GatewayForeachPayloadDelegate Delegate, VoidPtr User);
-
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnDebugMessage")]
-        public static extern void MGW_SDK_OnDebugMessage(Schema.GatewaySDK SDK, MGW_DebugMessageCallback Callback, VoidPtr User);
+        public static extern void MGW_SDK_OnDebugMessage(Schema.GatewaySDK SDK, GatewayDebugMessageCallback Callback, VoidPtr User);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_DetachOnDebugMessage")]
         public static extern void MGW_SDK_DetachOnDebugMessage(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ForeachPayload")]
+        public static extern void MGW_SDK_ForeachPayload(Schema.GatewaySDK SDK, GatewayForeachPayloadDelegate Delegate, VoidPtr User);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_IsAuthenticated")]
         public static extern bool MGW_SDK_IsAuthenticated(Schema.GatewaySDK SDK);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetGameMetadata")]
         public static extern RequestId MGW_SDK_SetGameMetadata(Schema.GatewaySDK SDK, MGW_GameMetadata Meta);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetGameTexts")]
+        public static extern void MGW_SDK_SetGameTexts(Schema.GatewaySDK SDK, MGW_GameText[] Texts, UInt64 Count);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_StartPoll")]
+        public static extern void MGW_SDK_StartPoll(Schema.GatewaySDK SDK, MGW_PollConfiguration Config);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_StopPoll")]
+        public static extern void MGW_SDK_StopPoll(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetActions")]
+        public static extern void MGW_SDK_SetActions(Schema.GatewaySDK SDK, MGW_Action[] Actions, UInt64 Count);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_EnableAction")]
+        public static extern void MGW_SDK_EnableAction(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_DisableAction")]
+        public static extern void MGW_SDK_DisableAction(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetActionCount")]
+        public static extern void MGW_SDK_SetActionCount(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID, Int32 count);
         #endregion
     }
 }
