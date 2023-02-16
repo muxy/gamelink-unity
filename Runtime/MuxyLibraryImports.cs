@@ -15,6 +15,7 @@ namespace MuxyGameLink.Imports
 
     using RequestId = UInt16;
 
+
     public struct SDKInstance
     {
         IntPtr Instance;
@@ -120,6 +121,13 @@ namespace MuxyGameLink.Imports
             public IntPtr Bytes;
             public ulong Length;
         };
+
+        public struct MGW_GameMetadata
+        {
+            public String GameName;
+            public String GameLogo;
+            public String Theme;
+        }
     }
 
     public class NativeString
@@ -181,7 +189,7 @@ namespace MuxyGameLink.Imports
 
     public delegate void GatewayAuthenticateResponseDelegate(VoidPtr UserData, Schema.MGW_AuthenticateResponse[] Response);
     public delegate void GatewayForeachPayloadDelegate(VoidPtr UserData, Schema.MGW_Payload[] Payload);
-
+    public delegate void MGW_DebugMessageCallback(VoidPtr UserData, [MarshalAs(UnmanagedType.LPUTF8Str)] String Message);
 
     public class Imported
     {
@@ -589,6 +597,9 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_AuthenticateWithPIN")]
         public static extern RequestId MGW_SDK_AuthenticateWithPIN(Schema.GatewaySDK SDK, [MarshalAs(UnmanagedType.LPUTF8Str)] String PIN, GatewayAuthenticateResponseDelegate Delegate, VoidPtr User);
 
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_AuthenticateWithRefreshToken")]
+        public static extern RequestId MGW_SDK_AuthenticateWithRefreshToken(Schema.GatewaySDK SDK, [MarshalAs(UnmanagedType.LPUTF8Str)] String Refresh, GatewayAuthenticateResponseDelegate Delegate, VoidPtr User);
+
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ReceiveMessage")]
         public static extern bool MGW_SDK_ReceiveMessage(Schema.GatewaySDK SDK, byte[] Message, uint BytesLength);
 
@@ -598,6 +609,17 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ForeachPayload")]
         public static extern void MGW_SDK_ForeachPayload(Schema.GatewaySDK SDK, GatewayForeachPayloadDelegate Delegate, VoidPtr User);
 
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnDebugMessage")]
+        public static extern void MGW_SDK_OnDebugMessage(Schema.GatewaySDK SDK, MGW_DebugMessageCallback Callback, VoidPtr User);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_DetachOnDebugMessage")]
+        public static extern void MGW_SDK_DetachOnDebugMessage(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_IsAuthenticated")]
+        public static extern bool MGW_SDK_IsAuthenticated(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetGameMetadata")]
+        public static extern RequestId MGW_SDK_SetGameMetadata(Schema.GatewaySDK SDK, MGW_GameMetadata Meta);
         #endregion
     }
 }
