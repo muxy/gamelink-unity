@@ -105,6 +105,20 @@ namespace MuxyGateway
         public OnUpdateDelegate OnPollUpdate { set; get; } = (Update) => { };
     }
 
+    public class BitsUsed
+    {
+        public string TransactionID { set; get; } = string.Empty;
+        public string SKU { set; get; } = string.Empty;
+        public int Bits { set; get; } = 0;
+    }
+
+    public class ActionUsed
+    {
+        public string TransactionID { set; get; } = string.Empty;
+        public string SKU { set; get; } = string.Empty;
+        public int Cost { set; get; } = 0;
+    }
+
     public class SDK
     {
         private GatewaySDK Instance;
@@ -118,7 +132,7 @@ namespace MuxyGateway
             Instance = Imported.MGW_MakeSDK(GameID);
             this.GameID = GameID;
 
-            GatewayDebugMessageCallback Callback = (UserData, Message) =>
+            GatewayDebugMessageDelegate Callback = (UserData, Message) =>
             {
                 Console.WriteLine(Message);
             };
@@ -385,6 +399,72 @@ namespace MuxyGateway
         public void SetActionCount(string ID, int Count)
         {
             Imported.MGW_SDK_SetActionCount(Instance, ID, Count);
+        }
+
+        public delegate void OnActionUsedDelegate(ActionUsed Used);
+        private GCHandle ActionUsedDelegateHandle;
+        public void OnACtionUsed(OnActionUsedDelegate Delegate)
+        {
+            GatewayOnActionUsedDelegate WrapperDelegate = (UserData, Pointer) =>
+            {
+                MGW_ActionUsed Value = Pointer[0];
+
+                ActionUsed Used = new ActionUsed();
+                Used.TransactionID = Value.TransactionID;
+                Used.SKU = Value.SKU;
+                Used.Cost = Value.Cost;
+
+                Delegate(Used);
+            };
+
+            // This is kinda sketch: OnActionUsed doesn't detach the previous
+            // callback after a call, so this leaks the GC Handle.
+            ActionUsedDelegateHandle = GCHandle.Alloc(WrapperDelegate, GCHandleType.Normal);
+            Imported.MGW_SDK_OnActionUsed(Instance, WrapperDelegate, IntPtr.Zero);
+        }
+
+        public void ValidateActionTransaction(ActionUsed Used, string Description)
+        {
+            MGW_ActionUsed Native = new MGW_ActionUsed();
+            Native.SKU = Used.SKU;
+            Native.TransactionID = Used.TransactionID;
+            Native.Cost = Used.Cost;
+
+            Imported.MGW_SDK_ValidateActionTransaction(Instance, Native, Description);
+        }
+
+        public void RefundActionTransaction(ActionUsed Used, string Description)
+        {
+            MGW_ActionUsed Native = new MGW_ActionUsed();
+            Native.SKU = Used.SKU;
+            Native.TransactionID = Used.TransactionID;
+            Native.Cost = Used.Cost;
+
+            Imported.MGW_SDK_RefundActionTransaction(Instance, Native, Description);
+        }
+        #endregion
+
+        #region Bits 
+        public delegate void OnBitsUsedDelegate(BitsUsed Used);
+        private GCHandle BitsUsedDelegateHandle;
+        public void OnBitsUsed(OnBitsUsedDelegate Delegate)
+        {
+            GatewayOnBitsUsedDelegate WrapperDelegate = (UserData, Pointer) =>
+            {
+                MGW_BitsUsed Value = Pointer[0];
+
+                BitsUsed Used = new BitsUsed();
+                Used.TransactionID = Value.TransactionID;
+                Used.SKU = Value.SKU;
+                Used.Bits = Value.Bits;
+
+                Delegate(Used);
+            };
+
+            // This is kinda sketch: OnActionUsed doesn't detach the previous
+            // callback after a call, so this leaks the GC Handle.
+            BitsUsedDelegateHandle = GCHandle.Alloc(WrapperDelegate, GCHandleType.Normal);
+            Imported.MGW_SDK_OnBitsUsed(Instance, WrapperDelegate, IntPtr.Zero);
         }
         #endregion
     }

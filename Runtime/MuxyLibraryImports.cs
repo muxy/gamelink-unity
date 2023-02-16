@@ -138,11 +138,11 @@ namespace MuxyGameLink.Imports
         {
             [MarshalAs(UnmanagedType.LPUTF8Str)]
             public String Label;
-            
-            [MarshalAs(UnmanagedType.LPUTF8Str)] 
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
             public String Value;
-            
-            [MarshalAs(UnmanagedType.LPUTF8Str)] 
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
             public String Icon;
         }
 
@@ -197,6 +197,28 @@ namespace MuxyGameLink.Imports
 
             public GatewayPollUpdateDelegate OnUpdate;
             public VoidPtr User;
+        }
+
+        public struct MGW_BitsUsed
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String TransactionID;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String SKU;
+
+            public Int32 Bits;
+        }
+
+        public struct MGW_ActionUsed
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String TransactionID;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String SKU;
+
+            public Int32 Cost;
         }
     }
 
@@ -259,7 +281,10 @@ namespace MuxyGameLink.Imports
 
     public delegate void GatewayAuthenticateResponseDelegate(VoidPtr UserData, Schema.MGW_AuthenticateResponse[] Response);
     public delegate void GatewayForeachPayloadDelegate(VoidPtr UserData, Schema.MGW_Payload[] Payload);
-    public delegate void GatewayDebugMessageCallback(VoidPtr UserData, [MarshalAs(UnmanagedType.LPUTF8Str)] String Message);
+    public delegate void GatewayDebugMessageDelegate(VoidPtr UserData, [MarshalAs(UnmanagedType.LPUTF8Str)] String Message);
+    public delegate void GatewayOnBitsUsedDelegate(VoidPtr UserData, Schema.MGW_BitsUsed[] BitsUsed);
+    public delegate void GatewayOnActionUsedDelegate(VoidPtr UserData, Schema.MGW_ActionUsed[] ActionUsed);
+
 
     public class Imported
     {
@@ -677,7 +702,7 @@ namespace MuxyGameLink.Imports
         public static extern bool MGW_SDK_HasPayloads(Schema.GatewaySDK SDK);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnDebugMessage")]
-        public static extern void MGW_SDK_OnDebugMessage(Schema.GatewaySDK SDK, GatewayDebugMessageCallback Callback, VoidPtr User);
+        public static extern void MGW_SDK_OnDebugMessage(Schema.GatewaySDK SDK, GatewayDebugMessageDelegate Callback, VoidPtr User);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_DetachOnDebugMessage")]
         public static extern void MGW_SDK_DetachOnDebugMessage(Schema.GatewaySDK SDK);
@@ -711,6 +736,18 @@ namespace MuxyGameLink.Imports
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetActionCount")]
         public static extern void MGW_SDK_SetActionCount(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID, Int32 count);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnBitsUsed")]
+        public static extern void MGW_SDK_OnBitsUsed(Schema.GatewaySDK Gateway, GatewayOnBitsUsedDelegate Callback, VoidPtr User);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnActionUsed")]
+        public static extern void MGW_SDK_OnActionUsed(Schema.GatewaySDK Gateway, GatewayOnActionUsedDelegate Callback, VoidPtr User);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ValidateActionTransaction")]
+        public static extern void MGW_SDK_ValidateActionTransaction(Schema.GatewaySDK Gateway, MGW_ActionUsed Coins, [MarshalAs(UnmanagedType.LPUTF8Str)] String Reason);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_RefundActionTransaction")]
+        public static extern void MGW_SDK_RefundActionTransaction(Schema.GatewaySDK Gateway, MGW_ActionUsed Coins, [MarshalAs(UnmanagedType.LPUTF8Str)] String Reason);
         #endregion
     }
 }
