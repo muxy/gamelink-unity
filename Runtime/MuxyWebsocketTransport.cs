@@ -1,13 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 using System.Net.WebSockets;
-using System.Threading;
-using System.IO;
 using System.Collections.Concurrent;
-
-using UnityEngine;
 
 namespace MuxyGameLink
 {
@@ -57,6 +50,28 @@ namespace MuxyGameLink
 			Run(instance);
 		}
 
+		public async void OpenAndRunInStage(MuxyGateway.SDK instance, Stage stage)
+		{
+			switch (stage)
+			{
+				case Stage.Sandbox:
+					{
+						string url = instance.GetSandboxURL();
+						await Open("ws://" + url);
+						break;
+					}
+
+				case Stage.Production:
+					{
+						string url = instance.GetProductionURL();
+						await Open("ws://" + url);
+						break;
+					}
+			}
+
+			Run(instance);
+		}
+
 		/// <summary>
 		/// Sends all queued messages in the instance
 		/// </summary>
@@ -71,17 +86,34 @@ namespace MuxyGameLink
 
 			foreach (string msg in messages)
 			{
+				
 				var bytes = new ArraySegment<byte>(UTF8Encoding.GetBytes(msg));
 				await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, CancelToken).ConfigureAwait(false);
 			}
 		}
 
-		/// <summary>
-		///  Invokes SendMessages and ReceiveMessage on different threads until a call to Stop()
-		///  Any callbacks invoked from `instance` will be called on a background thread, not the main thread.
-		/// </summary>
-		/// <param name="instance">The instance to use for sending and receiving messages</param>
-		public void Run(SDK instance)
+        public async Task SendMessages(MuxyGateway.SDK instance)
+        {
+			List<byte[]> messages = new List<byte[]>();
+            instance.ForeachPayload((MuxyGateway.Payload Payload) => {
+				messages.Add(Payload.Bytes);
+            });
+
+            foreach (byte[] msg in messages)
+            {
+                Console.WriteLine(">> {0}", Encoding.UTF8.GetString(msg));
+
+                var bytes = new ArraySegment<byte>(msg);
+                await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, CancelToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        ///  Invokes SendMessages and ReceiveMessage on different threads until a call to Stop()
+        ///  Any callbacks invoked from `instance` will be called on a background thread, not the main thread.
+        /// </summary>
+        /// <param name="instance">The instance to use for sending and receiving messages</param>
+        public void Run(SDK instance)
 		{
 			Done = false;
 			WriteThread = new Thread(async () =>
@@ -104,11 +136,34 @@ namespace MuxyGameLink
 			ReadThread.Start();
 		}
 
-		/// <summary>
-		///  Updates the Websocket Transport, it's only required to call this if you set HandleMessagesInMainThread to true when initializing the WebsocketTransport
-		/// </summary>
-		/// <param name="instance">The instance to use for sending and receiving messages</param>
-		public void Update(SDK instance)
+        public void Run(MuxyGateway.SDK instance)
+        {
+            Done = false;
+            WriteThread = new Thread(async () =>
+            {
+                while (!Done)
+                {
+                    await SendMessages(instance);
+                    Thread.Sleep(100);
+                }
+            });
+            WriteThread.Start();
+
+            ReadThread = new Thread(async () =>
+            {
+                while (!Done)
+                {
+                    await ReceiveMessage(instance);
+                }
+            });
+            ReadThread.Start();
+        }
+
+        /// <summary>
+        ///  Updates the Websocket Transport, it's only required to call this if you set HandleMessagesInMainThread to true when initializing the WebsocketTransport
+        /// </summary>
+        /// <param name="instance">The instance to use for sending and receiving messages</param>
+        public void Update(SDK instance)
 		{
 			string m;
 			while (Messages.TryDequeue(out m))
@@ -117,10 +172,19 @@ namespace MuxyGameLink
 			}
 		}
 
-		/// <summary>
-		///  Stops writing and reading threads.
-		/// </summary>
-		public void Stop()
+        public void Update(MuxyGateway.SDK instance)
+        {
+            string m;
+            while (Messages.TryDequeue(out m))
+            {
+                instance.ReceiveMessage(m);
+            }
+        }
+
+        /// <summary>
+        ///  Stops writing and reading threads.
+        /// </summary>
+        public void Stop()
         {
 			Done = true;
 			Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", CancelToken);
@@ -169,5 +233,43 @@ namespace MuxyGameLink
 				instance.ReceiveMessage(input);
 			}
 		}
-	}
+
+        public async Task ReceiveMessage(MuxyGateway.SDK instance)
+        {
+            MemoryStream memory = new MemoryStream();
+            while (true)
+            {
+                ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
+                var Result = await Websocket.ReceiveAsync(segment, CancelToken).ConfigureAwait(false);
+
+                if (Result.MessageType == WebSocketMessageType.Close)
+                {
+                    throw new EndOfStreamException("Closed");
+                }
+
+                if (Result.MessageType != WebSocketMessageType.Text)
+                {
+                    throw new InvalidDataException("Message type was not text");
+                }
+
+                memory.Write(segment.Array, 0, Result.Count);
+                if (Result.EndOfMessage)
+                {
+                    break;
+                }
+            }
+
+            string input = UTF8Encoding.GetString(memory.ToArray());
+
+            if (HandleMessagesInMainThread)
+            {
+                Messages.Enqueue(input);
+            }
+            else
+            {
+                Console.WriteLine("<< {0}", input);
+                instance.ReceiveMessage(input);
+            }
+        }
+    }
 }

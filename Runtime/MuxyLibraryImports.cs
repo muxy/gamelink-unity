@@ -1,4 +1,5 @@
-using System;
+using MuxyGameLink.Imports.Schema;
+using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
 namespace MuxyGameLink.Imports
@@ -101,6 +102,24 @@ namespace MuxyGameLink.Imports
             public IntPtr Obj;
         }
 
+        public struct GatewaySDK
+        {
+            public IntPtr SDK;
+        };
+
+        public struct MGW_AuthenticateResponse
+        {
+            public IntPtr JWT;
+            public IntPtr RefreshToken;
+            public IntPtr TwitchName;
+            public bool HasError;
+        };
+
+        public struct MGW_Payload
+        {
+            public IntPtr Bytes;
+            public ulong Length;
+        };
     }
 
     public class NativeString
@@ -159,6 +178,11 @@ namespace MuxyGameLink.Imports
 
     public delegate void ConfigGetDelegate(VoidPtr UserData, Schema.ConfigResponse ConfigGet);
     public delegate void ConfigUpdateDelegate(VoidPtr UserData, Schema.ConfigUpdate ConfigUpdate);
+
+    public delegate void GatewayAuthenticateResponseDelegate(VoidPtr UserData, Schema.MGW_AuthenticateResponse[] Response);
+    public delegate void GatewayForeachPayloadDelegate(VoidPtr UserData, Schema.MGW_Payload[] Payload);
+
+
     public class Imported
     {
         // URL Derivation
@@ -205,7 +229,7 @@ namespace MuxyGameLink.Imports
         public static extern bool IsAuthenticated(SDKInstance GameLink);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ReceiveMessage")]
-        public static extern bool ReceiveMessage(SDKInstance GameLink, [MarshalAs(UnmanagedType.LPStr)] String Bytes, uint BytesLength);
+        public static extern bool ReceiveMessage(SDKInstance GameLink, [MarshalAs(UnmanagedType.LPUTF8Str)] String Bytes, uint BytesLength);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ForeachPayload")]
         public static extern void ForeachPayload(SDKInstance GameLink, PayloadDelegate Callback, VoidPtr UserData);
@@ -547,6 +571,33 @@ namespace MuxyGameLink.Imports
         public static extern int MatchmakingUpdate_GetSubscriptionTier(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetBitsSpent")]
         public static extern int MatchmakingUpdate_GetBitsSpent(Schema.MatchmakingUpdateResponse Resp);
+        #endregion
+
+        #region Gateway
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_MakeSDK")]
+        public static extern Schema.GatewaySDK MGW_MakeSDK([MarshalAs(UnmanagedType.LPUTF8Str)] String GameID);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_KillSDK")]
+        public static extern void MGW_KillSDK(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_GetSandboxURL")]
+        public static extern StringPtr MGW_SDK_GetSandboxURL(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_GetProductionURL")]
+        public static extern StringPtr MGW_SDK_GetProductionURL(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_AuthenticateWithPIN")]
+        public static extern RequestId MGW_SDK_AuthenticateWithPIN(Schema.GatewaySDK SDK, [MarshalAs(UnmanagedType.LPUTF8Str)] String PIN, GatewayAuthenticateResponseDelegate Delegate, VoidPtr User);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ReceiveMessage")]
+        public static extern bool MGW_SDK_ReceiveMessage(Schema.GatewaySDK SDK, byte[] Message, uint BytesLength);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_HasPayloads")]
+        public static extern bool MGW_SDK_HasPayloads(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ForeachPayload")]
+        public static extern void MGW_SDK_ForeachPayload(Schema.GatewaySDK SDK, GatewayForeachPayloadDelegate Delegate, VoidPtr User);
+
         #endregion
     }
 }
