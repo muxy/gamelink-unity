@@ -23,7 +23,6 @@ namespace MuxyGameLink
         private Thread ReadThread;
         private bool Done = false;
 
-
         /// <summary>
         ///  Creates a websocket transport without an associated Gamelink instance or stage.
         /// <param name="HandleMessagesInMainThread">If you are using Unity or an engine that doesn't work nicely with multithreading this should be set to true. If set to true, you must call Update() for GameLink to receive messages</param>
@@ -75,6 +74,16 @@ namespace MuxyGameLink
             }
 
             Run(instance);
+        }
+
+        public async void OpenAndRunSandbox(MuxyGateway.SDK instance)
+        {
+            OpenAndRunInStage(instance, Stage.Sandbox);
+        }
+
+        public async void OpenAndRunProduction(MuxyGateway.SDK instance)
+        {
+            OpenAndRunInStage(instance, Stage.Production);
         }
 
         /// <summary>
