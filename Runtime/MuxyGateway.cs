@@ -327,13 +327,10 @@ namespace MuxyGateway
                 Update.Winner = NativeUpdate.Winner;
                 Update.WinningVoteCount = NativeUpdate.WinningVoteCount;
 
-                List<int> Results = new List<int>();
-                for (UInt64 i = 0; i < NativeUpdate.ResultCount; i++)
-                {
-                    Results.Add(NativeUpdate.Results[i]);
-                }
+                int[] ManagedResults = new int[NativeUpdate.ResultCount];
+                Marshal.Copy(NativeUpdate.Results, ManagedResults, 0, (int)NativeUpdate.ResultCount);
 
-                Update.Results = Results;
+                Update.Results = ManagedResults.ToList();
                 Update.Count = NativeUpdate.Count;
                 Update.Mean = NativeUpdate.Mean;
                 Update.IsFinal = NativeUpdate.IsFinal;
