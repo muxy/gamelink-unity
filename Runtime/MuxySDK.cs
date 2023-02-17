@@ -737,6 +737,25 @@ namespace MuxyGameLink
 
         #endregion
 
+        #region Metadata
+        public class GameMetadata
+        {
+            public string Name { get; set; } = string.Empty;
+            public string Logo { get; set; } = string.Empty;
+            public string Theme { get; set; } = string.Empty;
+        }
+
+        public UInt16 SetGameMetadata(GameMetadata InMeta)
+        {
+            Imports.Schema.GameMetadata Meta = new();
+            Meta.GameLogo = InMeta.Logo;
+            Meta.GameName = InMeta.Name;
+            Meta.Theme = InMeta.Theme;
+
+           return Imported.SetGameMetadata(Instance, Meta);
+        }
+        #endregion
+
         public class PatchList
         {
             public PatchList()

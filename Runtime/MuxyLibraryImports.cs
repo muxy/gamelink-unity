@@ -1,6 +1,7 @@
 using MuxyGameLink.Imports.Schema;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
+using System;
 
 namespace MuxyGameLink.Imports
 {
@@ -101,6 +102,18 @@ namespace MuxyGameLink.Imports
         public struct ConfigUpdate
         {
             public IntPtr Obj;
+        }
+
+        public struct GameMetadata
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String GameName;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String GameLogo;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String Theme;
         }
 
         public struct GatewaySDK
@@ -674,6 +687,11 @@ namespace MuxyGameLink.Imports
         public static extern int MatchmakingUpdate_GetSubscriptionTier(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetBitsSpent")]
         public static extern int MatchmakingUpdate_GetBitsSpent(Schema.MatchmakingUpdateResponse Resp);
+        #endregion
+
+        #region Metadata
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_SetGameMetadata")]
+        public static extern RequestId SetGameMetadata(SDKInstance SDK, GameMetadata Meta);
         #endregion
 
         #region Gateway
