@@ -350,6 +350,9 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ForeachPayload")]
         public static extern void ForeachPayload(SDKInstance GameLink, PayloadDelegate Callback, VoidPtr UserData);
 
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_HandleReconnect")]
+        public static extern void HandleReconnect(SDKInstance SDK);
+
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Payload_GetData")]
         public static extern StringPtr Payload_GetData(Payload Payload);
 
@@ -718,6 +721,9 @@ namespace MuxyGameLink.Imports
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_HasPayloads")]
         public static extern bool MGW_SDK_HasPayloads(Schema.GatewaySDK SDK);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_HandleReconnect")]
+        public static extern void MGW_SDK_HandleReconnect(Schema.GatewaySDK SDK);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnDebugMessage")]
         public static extern void MGW_SDK_OnDebugMessage(Schema.GatewaySDK SDK, GatewayDebugMessageDelegate Callback, VoidPtr User);

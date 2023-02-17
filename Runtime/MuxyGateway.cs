@@ -194,6 +194,11 @@ namespace MuxyGateway
             string s = NativeString.StringFromUTF8AndDeallocate(Imported.MGW_SDK_GetProductionURL(Instance));
             return s;
         }
+
+        public void HandleReconnect()
+        {
+            Imported.MGW_SDK_HandleReconnect(Instance);
+        }
         #endregion
 
         #region Authentication
@@ -308,7 +313,7 @@ namespace MuxyGateway
             }
 
             IntPtr[] StringsArray = Strings.ToArray();
-            GCHandle StringsArrayHandle  = GCHandle.Alloc(StringsArray, GCHandleType.Pinned);
+            GCHandle StringsArrayHandle = GCHandle.Alloc(StringsArray, GCHandleType.Pinned);
 
             NativeConfig.Options = StringsArrayHandle.AddrOfPinnedObject();
             NativeConfig.OptionsCount = (UInt64)Configuration.Options.Count;

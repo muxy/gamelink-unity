@@ -15,7 +15,7 @@ namespace MuxyGameLink
             IntPtr Ptr = Imported.ProjectionWebsocketConnectionURL(this.ClientId, (Int32)Stage, "csharp", 0, 0, 1);
             return NativeString.StringFromUTF8AndDeallocate(Ptr);
         }
-        
+
         /// <summary> Constructs the SDK </summary>
         /// <param name="ClientId"> Your given Muxy ClientId </param>
         public SDK(String ClientId)
@@ -134,6 +134,11 @@ namespace MuxyGameLink
             GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
             Imported.ForeachPayload(this.Instance, WrapperCallback, IntPtr.Zero);
             Handle.Free();
+        }
+
+        public void HandleReconnect()
+        {
+            Imported.HandleReconnect(Instance);
         }
         #endregion
 
@@ -836,7 +841,7 @@ namespace MuxyGameLink
 
             OnDebugMessageHandle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
             Imported.OnDebugMessage(this.Instance, WrapperCallback, IntPtr.Zero);
-        }  
+        }
         /// <summary> Detach callback for debug messages </summary>
         /// <param name="Handle"> Handle to detach </param>
         public void DetachOnDebugMessage()
