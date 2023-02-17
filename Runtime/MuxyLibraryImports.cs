@@ -193,7 +193,7 @@ namespace MuxyGameLink.Imports
             public bool IsFinal;
         }
 
-        public delegate void GatewayPollUpdateDelegate(VoidPtr User, MGW_PollUpdate[] Update);
+        public delegate void GatewayPollUpdateDelegate(VoidPtr User, IntPtr Update);
 
         public struct MGW_PollConfiguration
         {
@@ -292,11 +292,11 @@ namespace MuxyGameLink.Imports
     public delegate void ConfigGetDelegate(VoidPtr UserData, Schema.ConfigResponse ConfigGet);
     public delegate void ConfigUpdateDelegate(VoidPtr UserData, Schema.ConfigUpdate ConfigUpdate);
 
-    public delegate void GatewayAuthenticateResponseDelegate(VoidPtr UserData, Schema.MGW_AuthenticateResponse[] Response);
-    public delegate void GatewayForeachPayloadDelegate(VoidPtr UserData, Schema.MGW_Payload[] Payload);
+    public delegate void GatewayAuthenticateResponseDelegate(VoidPtr UserData, IntPtr Response);
+    public delegate void GatewayForeachPayloadDelegate(VoidPtr UserData, IntPtr Payload);
     public delegate void GatewayDebugMessageDelegate(VoidPtr UserData, [MarshalAs(UnmanagedType.LPUTF8Str)] String Message);
-    public delegate void GatewayOnBitsUsedDelegate(VoidPtr UserData, Schema.MGW_BitsUsed[] BitsUsed);
-    public delegate void GatewayOnActionUsedDelegate(VoidPtr UserData, Schema.MGW_ActionUsed[] ActionUsed);
+    public delegate void GatewayOnBitsUsedDelegate(VoidPtr UserData, IntPtr BitsUsed);
+    public delegate void GatewayOnActionUsedDelegate(VoidPtr UserData, IntPtr ActionUsed);
 
 
     public class Imported

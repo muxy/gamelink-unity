@@ -129,6 +129,7 @@ namespace MuxyGameLink
         public async Task SendMessages(MuxyGateway.SDK instance)
         {
             List<byte[]> messages = new List<byte[]>();
+
             instance.ForeachPayload((MuxyGateway.Payload Payload) =>
             {
                 messages.Add(Payload.Bytes);
