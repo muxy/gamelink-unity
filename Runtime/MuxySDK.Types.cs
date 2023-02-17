@@ -84,7 +84,7 @@ namespace MuxyGameLink
 
     public class AuthenticationResponse : HasError
     {
-        public AuthenticationResponse(Imports.Schema.AuthenticateResponse Obj) 
+        public AuthenticationResponse(Imports.Schema.AuthenticateResponse Obj)
             : base(Obj.Obj)
         { }
     }
@@ -185,7 +185,7 @@ namespace MuxyGameLink
 
             this.Json = NativeString.StringFromUTF8AndDeallocate(Imported.Schema_StateResponse_GetJson(Obj));
         }
-      
+
         public String Json { get; private set; }
     }
 
@@ -238,7 +238,7 @@ namespace MuxyGameLink
             this.ConfigId = NativeString.StringFromUTF8(Imported.Schema_ConfigUpdateResponse_GetConfigID(Obj));
             this.Json = NativeString.StringFromUTF8AndDeallocate(Imported.Schema_ConfigUpdateResponse_GetJson(Obj));
         }
-        
+
         public String ConfigId { get; private set; }
         public String Json { get; private set; }
     }

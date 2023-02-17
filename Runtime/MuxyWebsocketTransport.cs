@@ -8,7 +8,6 @@ namespace MuxyGameLink
     {
         private ClientWebSocket Websocket;
         private CancellationTokenSource CancellationSource = new CancellationTokenSource();
-        private CancellationToken CancelToken => CancellationSource.Token;
         private static readonly Encoding UTF8Encoding = new UTF8Encoding(false);
 
         private bool HandleMessagesInMainThread = false;
@@ -17,6 +16,16 @@ namespace MuxyGameLink
         private Thread WriteThread;
         private Thread ReadThread;
         private bool Done = false;
+
+        private Uri TargetUri;
+
+        private CancellationTokenSource TokenSource()
+        {
+            CancellationTokenSource src = new CancellationTokenSource();
+            src.CancelAfter(3000);
+
+            return src;
+        }
 
         /// <summary>
         ///  Creates a websocket transport without an associated Gamelink instance or stage.
@@ -35,7 +44,13 @@ namespace MuxyGameLink
         /// <returns></returns>
         public async Task Open(string uri)
         {
-            await Websocket.ConnectAsync(new Uri(uri), CancelToken).ConfigureAwait(false);
+            TargetUri = new Uri(uri);
+
+            using (CancellationTokenSource src = TokenSource())
+            {
+                await Websocket.ConnectAsync(TargetUri, src.Token)
+                    .ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -96,9 +111,13 @@ namespace MuxyGameLink
 
             foreach (string msg in messages)
             {
-
                 var bytes = new ArraySegment<byte>(UTF8Encoding.GetBytes(msg));
-                await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, CancelToken).ConfigureAwait(false);
+
+                using (CancellationTokenSource src = TokenSource())
+                {
+                    await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
+                        .ConfigureAwait(false);
+                }
             }
         }
 
@@ -112,10 +131,13 @@ namespace MuxyGameLink
 
             foreach (byte[] msg in messages)
             {
-                Console.WriteLine(">> {0}", Encoding.UTF8.GetString(msg));
-
                 var bytes = new ArraySegment<byte>(msg);
-                await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, CancelToken).ConfigureAwait(false);
+
+                using (CancellationTokenSource src = TokenSource())
+                {
+                    await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
+                        .ConfigureAwait(false);
+                }
             }
         }
 
@@ -198,7 +220,12 @@ namespace MuxyGameLink
         public void Stop()
         {
             Done = true;
-            Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", CancelToken);
+
+            using (CancellationTokenSource src = TokenSource())
+            {
+                Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token);
+            }
+
             WriteThread.Join();
             ReadThread.Join();
         }
@@ -213,23 +240,36 @@ namespace MuxyGameLink
             MemoryStream memory = new MemoryStream();
             while (true)
             {
-                ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
-                var Result = await Websocket.ReceiveAsync(segment, CancelToken).ConfigureAwait(false);
-
-                if (Result.MessageType == WebSocketMessageType.Close)
+                try
                 {
-                    throw new EndOfStreamException("Closed");
+                    // Reading has an infinite timeout
+                    using (CancellationTokenSource src = new CancellationTokenSource())
+                    {
+                        ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
+                        var Result = await Websocket.ReceiveAsync(segment, src.Token)
+                            .ConfigureAwait(false);
+
+                        if (Result.MessageType == WebSocketMessageType.Close)
+                        {
+                            throw new EndOfStreamException("Closed");
+                        }
+
+                        if (Result.MessageType != WebSocketMessageType.Text)
+                        {
+                            throw new InvalidDataException("Message type was not text");
+                        }
+
+                        memory.Write(segment.Array, 0, Result.Count);
+                        if (Result.EndOfMessage)
+                        {
+                            break;
+                        }
+                    }
                 }
-
-                if (Result.MessageType != WebSocketMessageType.Text)
+                catch (Exception ex)
                 {
-                    throw new InvalidDataException("Message type was not text");
-                }
-
-                memory.Write(segment.Array, 0, Result.Count);
-                if (Result.EndOfMessage)
-                {
-                    break;
+                    Console.WriteLine(ex.ToString());
+                    await AttemptReconnect(instance);
                 }
             }
 
@@ -245,28 +285,85 @@ namespace MuxyGameLink
             }
         }
 
+        private async Task AttemptReconnect(SDK instance)
+        {
+            if (Websocket.State != WebSocketState.Aborted)
+            {
+                using (CancellationTokenSource src = TokenSource())
+                {
+                    await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            // Setup the reconnection setup.
+            for (int i = 0; i < 10; i++)
+            {
+                Websocket = new ClientWebSocket();
+
+                try
+                {
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.ConnectAsync(TargetUri, src.Token)
+                            .ConfigureAwait(false);
+
+                        Console.WriteLine("Connected?");
+
+                        instance.HandleReconnect();
+                        return;
+                    }
+                }
+                catch (OperationCanceledException e)
+                {
+                    // Not connected.
+                    int waitMillis = 1000 * (i + 1);
+                    if (waitMillis > 5000)
+                    {
+                        waitMillis = 5000;
+                    }
+
+                    Console.WriteLine("Attempting to reconnect. attempt={0}/10 wait={1}ms", i + 1, waitMillis);
+                    Thread.Sleep(waitMillis);
+                }
+            }
+        }
+
         public async Task ReceiveMessage(MuxyGateway.SDK instance)
         {
             MemoryStream memory = new MemoryStream();
             while (true)
             {
-                ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
-                var Result = await Websocket.ReceiveAsync(segment, CancelToken).ConfigureAwait(false);
-
-                if (Result.MessageType == WebSocketMessageType.Close)
+                try
                 {
-                    throw new EndOfStreamException("Closed");
+                    // Reading has an infinite timeout
+                    using (CancellationTokenSource src = new CancellationTokenSource())
+                    {
+                        ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
+                        var Result = await Websocket.ReceiveAsync(segment, src.Token)
+                            .ConfigureAwait(false);
+
+                        if (Result.MessageType == WebSocketMessageType.Close)
+                        {
+                            throw new EndOfStreamException("Closed");
+                        }
+
+                        if (Result.MessageType != WebSocketMessageType.Text)
+                        {
+                            throw new InvalidDataException("Message type was not text");
+                        }
+
+                        memory.Write(segment.Array, 0, Result.Count);
+                        if (Result.EndOfMessage)
+                        {
+                            break;
+                        }
+                    }
                 }
-
-                if (Result.MessageType != WebSocketMessageType.Text)
+                catch (Exception ex)
                 {
-                    throw new InvalidDataException("Message type was not text");
-                }
-
-                memory.Write(segment.Array, 0, Result.Count);
-                if (Result.EndOfMessage)
-                {
-                    break;
+                    Console.WriteLine(ex.ToString());
+                    await AttemptReconnect(instance);
                 }
             }
 
@@ -278,8 +375,51 @@ namespace MuxyGameLink
             }
             else
             {
-                Console.WriteLine("<< {0}", input);
                 instance.ReceiveMessage(input);
+            }
+        }
+
+        private async Task AttemptReconnect(MuxyGateway.SDK instance)
+        {
+            if (Websocket.State != WebSocketState.Aborted)
+            {
+                using (CancellationTokenSource src = TokenSource())
+                {
+                    await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            // Setup the reconnection setup.
+            for (int i = 0; i < 10; i++)
+            {
+                Websocket = new ClientWebSocket();
+
+                try
+                {
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.ConnectAsync(TargetUri, src.Token)
+                            .ConfigureAwait(false);
+
+                        Console.WriteLine("Connected?");
+
+                        instance.HandleReconnect();
+                        return;
+                    }
+                }
+                catch (OperationCanceledException e)
+                {
+                    // Not connected.
+                    int waitMillis = 1000 * (i + 1);
+                    if (waitMillis > 5000)
+                    {
+                        waitMillis = 5000;
+                    }
+
+                    Console.WriteLine("Attempting to reconnect. attempt={0}/10 wait={1}ms", i + 1, waitMillis);
+                    Thread.Sleep(waitMillis);
+                }
             }
         }
     }
