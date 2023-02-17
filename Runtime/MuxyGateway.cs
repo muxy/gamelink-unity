@@ -1,9 +1,13 @@
 ﻿using MuxyGameLink.Imports;
 using MuxyGameLink.Imports.Schema;
-using System.Collections;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System;
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+using UnityEngine;
+#endif
 
 namespace MuxyGateway
 {
@@ -134,7 +138,7 @@ namespace MuxyGateway
 
             GatewayDebugMessageDelegate Callback = (UserData, Message) =>
             {
-                Console.WriteLine(Message);
+                this.LogMessage(Message);
             };
 
             DebugMessage = GCHandle.Alloc(Callback, GCHandleType.Normal);
@@ -144,6 +148,17 @@ namespace MuxyGateway
         ~SDK()
         {
             Imported.MGW_KillSDK(Instance);
+        }
+
+        private void LogMessage(string Message)
+        {
+#if UNITY_EDITOR
+            Debug.Log(Message);
+#elif UNITY_STANDALONE
+            Debug.Log(Message);
+#else
+            Console.Error.WriteLine(Message);
+#endif
         }
 
         #region Network
@@ -330,7 +345,9 @@ namespace MuxyGateway
                 int[] ManagedResults = new int[NativeUpdate.ResultCount];
                 Marshal.Copy(NativeUpdate.Results, ManagedResults, 0, (int)NativeUpdate.ResultCount);
 
-                Update.Results = ManagedResults.ToList();
+                List<int> ResultList = new List<int>(ManagedResults);
+
+                Update.Results = ResultList;
                 Update.Count = NativeUpdate.Count;
                 Update.Mean = NativeUpdate.Mean;
                 Update.IsFinal = NativeUpdate.IsFinal;

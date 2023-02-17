@@ -1,6 +1,11 @@
 using System.Text;
 using System.Net.WebSockets;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
+using System.Threading;
+using System.IO;
 
 namespace MuxyGameLink
 {
@@ -86,12 +91,12 @@ namespace MuxyGameLink
             Run(instance);
         }
 
-        public async void OpenAndRunSandbox(MuxyGateway.SDK instance)
+        public void OpenAndRunSandbox(MuxyGateway.SDK instance)
         {
             OpenAndRunInStage(instance, Stage.Sandbox);
         }
 
-        public async void OpenAndRunProduction(MuxyGateway.SDK instance)
+        public void OpenAndRunProduction(MuxyGateway.SDK instance)
         {
             OpenAndRunInStage(instance, Stage.Production);
         }
@@ -314,7 +319,7 @@ namespace MuxyGameLink
                         return;
                     }
                 }
-                catch (OperationCanceledException e)
+                catch (OperationCanceledException)
                 {
                     // Not connected.
                     int waitMillis = 1000 * (i + 1);
@@ -408,7 +413,7 @@ namespace MuxyGameLink
                         return;
                     }
                 }
-                catch (OperationCanceledException e)
+                catch (OperationCanceledException)
                 {
                     // Not connected.
                     int waitMillis = 1000 * (i + 1);
