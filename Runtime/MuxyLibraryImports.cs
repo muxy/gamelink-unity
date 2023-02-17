@@ -185,7 +185,7 @@ namespace MuxyGameLink.Imports
             public Int32 Winner;
             public Int32 WinningVoteCount;
 
-            public Int32[] Results;
+            public IntPtr Results;
             public UInt64 ResultCount;
 
             public Int32 Count;
