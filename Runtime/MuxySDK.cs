@@ -32,6 +32,11 @@ namespace MuxyGameLink
             OnMatchmakingUpdateHandles = new Dictionary<UInt32, GCHandle>();
         }
 
+        public SDK(String ClientId, String GameId) : this(ClientId)
+        {
+            this.GameId = GameId;
+        }
+
         ~SDK()
         {
             Imported.Kill(this.Instance);
@@ -61,7 +66,7 @@ namespace MuxyGameLink
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.AuthenticateWithRefreshToken(this.Instance, this.ClientId, RefreshToken, WrapperCallback, IntPtr.Zero);
+            return Imported.AuthenticateWithGameIDAndRefreshToken(this.Instance, this.ClientId, this.GameId, RefreshToken, WrapperCallback, IntPtr.Zero);
      
         }
 
@@ -80,7 +85,7 @@ namespace MuxyGameLink
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.AuthenticateWithPIN(this.Instance, this.ClientId, PIN, WrapperCallback, IntPtr.Zero);
+            return Imported.AuthenticateWithGameIDAndPIN(this.Instance, this.ClientId, this.GameId, PIN, WrapperCallback, IntPtr.Zero);
         }
 
         public User User
@@ -847,7 +852,8 @@ namespace MuxyGameLink
 
 
         #region Members
-        public String ClientId {get; set;}
+        public String ClientId { get; set; } = string.Empty;
+        public String GameId { get; set; } = string.Empty;
 
         private SDKInstance Instance;
         private User CachedUserInstance;
