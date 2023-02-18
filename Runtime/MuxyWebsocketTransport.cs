@@ -7,12 +7,17 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+#endif
+
 namespace MuxyGameLink
 {
     public class WebsocketTransport
     {
         private ClientWebSocket Websocket;
-        private CancellationTokenSource CancellationSource = new CancellationTokenSource();
+        private CancellationTokenSource UnboundedCancellationSource = new CancellationTokenSource();
         private static readonly Encoding UTF8Encoding = new UTF8Encoding(false);
 
         private bool HandleMessagesInMainThread = false;
@@ -40,6 +45,26 @@ namespace MuxyGameLink
         {
             Websocket = new ClientWebSocket();
             this.HandleMessagesInMainThread = HandleMessagesInMainThread;
+
+#if UNITY_EDITOR
+            EditorApplication.playModeStateChanged += (PlayModeStateChange state) =>
+            {
+                if (state == PlayModeStateChange.ExitingPlayMode)
+                {
+                    // If a user forgets to stop the websocket transport, the editor locks up.
+                    // This is bad, prevent this by attaching an event to stop the websocket connection
+                    // when the editor stops the PIE mode.
+                    UnityEngine.Debug.Log("Stopping websocket transport due to editor state change.");
+                    Stop();
+                    UnityEngine.Debug.Log("This may cause errors while playing in editor, but prevents leaking a connection, which is worse.");
+                }
+            };
+#endif
+        }
+
+        ~WebsocketTransport()
+        {
+            Stop();
         }
 
         /// <summary>
@@ -69,7 +94,7 @@ namespace MuxyGameLink
             Run(instance);
         }
 
-        public async void OpenAndRunInStage(MuxyGateway.SDK instance, Stage stage)
+        private async void OpenAndRunInStage(MuxyGateway.SDK instance, Stage stage)
         {
             switch (stage)
             {
@@ -91,12 +116,12 @@ namespace MuxyGameLink
             Run(instance);
         }
 
-        public void OpenAndRunSandbox(MuxyGateway.SDK instance)
+        public void OpenAndRunInSandbox(MuxyGateway.SDK instance)
         {
             OpenAndRunInStage(instance, Stage.Sandbox);
         }
 
-        public void OpenAndRunProduction(MuxyGateway.SDK instance)
+        public void OpenAndRunInProduction(MuxyGateway.SDK instance)
         {
             OpenAndRunInStage(instance, Stage.Production);
         }
@@ -227,11 +252,19 @@ namespace MuxyGameLink
         {
             Done = true;
 
-            using (CancellationTokenSource src = TokenSource())
+            try
             {
-                Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token);
+                using (CancellationTokenSource src = TokenSource())
+                {
+                    Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token);
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore.
             }
 
+            UnboundedCancellationSource.Cancel();
             WriteThread.Join();
             ReadThread.Join();
         }
@@ -249,33 +282,38 @@ namespace MuxyGameLink
                 try
                 {
                     // Reading has an infinite timeout
-                    using (CancellationTokenSource src = new CancellationTokenSource())
+                    ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
+                    var Result = await Websocket.ReceiveAsync(segment, UnboundedCancellationSource.Token)
+                        .ConfigureAwait(false);
+
+                    if (Result.MessageType == WebSocketMessageType.Close)
                     {
-                        ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
-                        var Result = await Websocket.ReceiveAsync(segment, src.Token)
-                            .ConfigureAwait(false);
+                        throw new EndOfStreamException("Closed");
+                    }
 
-                        if (Result.MessageType == WebSocketMessageType.Close)
-                        {
-                            throw new EndOfStreamException("Closed");
-                        }
+                    if (Result.MessageType != WebSocketMessageType.Text)
+                    {
+                        throw new InvalidDataException("Message type was not text");
+                    }
 
-                        if (Result.MessageType != WebSocketMessageType.Text)
-                        {
-                            throw new InvalidDataException("Message type was not text");
-                        }
-
-                        memory.Write(segment.Array, 0, Result.Count);
-                        if (Result.EndOfMessage)
-                        {
-                            break;
-                        }
+                    memory.Write(segment.Array, 0, Result.Count);
+                    if (Result.EndOfMessage)
+                    {
+                        break;
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
-                    await AttemptReconnect(instance);
+
+                    if (!Done)
+                    {
+                        await AttemptReconnect(instance);
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -343,33 +381,38 @@ namespace MuxyGameLink
                 try
                 {
                     // Reading has an infinite timeout
-                    using (CancellationTokenSource src = new CancellationTokenSource())
+                    ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
+                    var Result = await Websocket.ReceiveAsync(segment, UnboundedCancellationSource.Token)
+                        .ConfigureAwait(false);
+
+                    if (Result.MessageType == WebSocketMessageType.Close)
                     {
-                        ArraySegment<byte> segment = new ArraySegment<byte>(new byte[1024]);
-                        var Result = await Websocket.ReceiveAsync(segment, src.Token)
-                            .ConfigureAwait(false);
+                        throw new EndOfStreamException("Closed");
+                    }
 
-                        if (Result.MessageType == WebSocketMessageType.Close)
-                        {
-                            throw new EndOfStreamException("Closed");
-                        }
+                    if (Result.MessageType != WebSocketMessageType.Text)
+                    {
+                        throw new InvalidDataException("Message type was not text");
+                    }
 
-                        if (Result.MessageType != WebSocketMessageType.Text)
-                        {
-                            throw new InvalidDataException("Message type was not text");
-                        }
-
-                        memory.Write(segment.Array, 0, Result.Count);
-                        if (Result.EndOfMessage)
-                        {
-                            break;
-                        }
+                    memory.Write(segment.Array, 0, Result.Count);
+                    if (Result.EndOfMessage)
+                    {
+                        break;
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
-                    await AttemptReconnect(instance);
+
+                    if (!Done)
+                    {
+                        await AttemptReconnect(instance);
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
             }
 

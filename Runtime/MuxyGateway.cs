@@ -11,6 +11,16 @@ using UnityEngine;
 
 namespace MuxyGateway
 {
+    // Basically just moves this into the MuxyGateway namespace.
+
+    public class WebsocketTransport : MuxyGameLink.WebsocketTransport
+    {
+        public WebsocketTransport()
+            : base(true)
+        {}
+    };
+
+
     public class AuthenticationResponse
     {
         public string JWT { get; set; } = string.Empty;
