@@ -1,12 +1,26 @@
 ﻿using MuxyGameLink.Imports;
 using MuxyGameLink.Imports.Schema;
-using System.Collections;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System;
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+using UnityEngine;
+#endif
 
 namespace MuxyGateway
 {
+    // Basically just moves this into the MuxyGateway namespace.
+
+    public class WebsocketTransport : MuxyGameLink.WebsocketTransport
+    {
+        public WebsocketTransport()
+            : base(true)
+        {}
+    };
+
+
     public class AuthenticationResponse
     {
         public string JWT { get; set; } = string.Empty;
@@ -134,7 +148,7 @@ namespace MuxyGateway
 
             GatewayDebugMessageDelegate Callback = (UserData, Message) =>
             {
-                Console.WriteLine(Message);
+                this.LogMessage(Message);
             };
 
             DebugMessage = GCHandle.Alloc(Callback, GCHandleType.Normal);
@@ -144,6 +158,17 @@ namespace MuxyGateway
         ~SDK()
         {
             Imported.MGW_KillSDK(Instance);
+        }
+
+        private void LogMessage(string Message)
+        {
+#if UNITY_EDITOR
+            Debug.Log(Message);
+#elif UNITY_STANDALONE
+            Debug.Log(Message);
+#else
+            Console.Error.WriteLine(Message);
+#endif
         }
 
         #region Network
@@ -170,8 +195,8 @@ namespace MuxyGateway
             GatewayForeachPayloadDelegate WrapperCallback = (UserData, Msg) =>
             {
                 Payload p = new Payload();
+                MGW_Payload first = Marshal.PtrToStructure<MGW_Payload>(Msg);
 
-                MGW_Payload first = Msg[0];
                 p.Bytes = new byte[first.Length];
                 Marshal.Copy(first.Bytes, p.Bytes, 0, (int)first.Length);
 
@@ -208,7 +233,7 @@ namespace MuxyGateway
             GatewayAuthenticateResponseDelegate WrapperCallback = (UserData, Msg) =>
             {
                 AuthenticationResponse Response = new AuthenticationResponse();
-                MGW_AuthenticateResponse resp = Msg[0];
+                MGW_AuthenticateResponse resp = Marshal.PtrToStructure<MGW_AuthenticateResponse>(Msg);
 
                 Response.JWT = NativeString.StringFromUTF8(resp.JWT);
                 Response.RefreshToken = NativeString.StringFromUTF8(resp.RefreshToken);
@@ -230,7 +255,7 @@ namespace MuxyGateway
             GatewayAuthenticateResponseDelegate WrapperCallback = (UserData, Msg) =>
             {
                 AuthenticationResponse Response = new AuthenticationResponse();
-                MGW_AuthenticateResponse resp = Msg[0];
+                MGW_AuthenticateResponse resp = Marshal.PtrToStructure<MGW_AuthenticateResponse>(Msg);
 
                 Response.JWT = NativeString.StringFromUTF8(resp.JWT);
                 Response.RefreshToken = NativeString.StringFromUTF8(resp.RefreshToken);
@@ -319,9 +344,9 @@ namespace MuxyGateway
             NativeConfig.OptionsCount = (UInt64)Configuration.Options.Count;
             NativeConfig.Duration = Configuration.DurationInSeconds;
 
-            GatewayPollUpdateDelegate WrapperCallback = (IntPtr User, MGW_PollUpdate[] UpdatePtr) =>
+            GatewayPollUpdateDelegate WrapperCallback = (IntPtr User, IntPtr UpdatePtr) =>
             {
-                MGW_PollUpdate NativeUpdate = UpdatePtr[0];
+                MGW_PollUpdate NativeUpdate = Marshal.PtrToStructure<MGW_PollUpdate>(UpdatePtr);
 
                 PollUpdate Update = new PollUpdate();
                 Update.Winner = NativeUpdate.Winner;
@@ -330,7 +355,9 @@ namespace MuxyGateway
                 int[] ManagedResults = new int[NativeUpdate.ResultCount];
                 Marshal.Copy(NativeUpdate.Results, ManagedResults, 0, (int)NativeUpdate.ResultCount);
 
-                Update.Results = ManagedResults.ToList();
+                List<int> ResultList = new List<int>(ManagedResults);
+
+                Update.Results = ResultList;
                 Update.Count = NativeUpdate.Count;
                 Update.Mean = NativeUpdate.Mean;
                 Update.IsFinal = NativeUpdate.IsFinal;
@@ -409,7 +436,7 @@ namespace MuxyGateway
         {
             GatewayOnActionUsedDelegate WrapperDelegate = (UserData, Pointer) =>
             {
-                MGW_ActionUsed Value = Pointer[0];
+                MGW_ActionUsed Value = Marshal.PtrToStructure<MGW_ActionUsed>(Pointer);
 
                 ActionUsed Used = new ActionUsed();
                 Used.TransactionID = Value.TransactionID;
@@ -453,7 +480,7 @@ namespace MuxyGateway
         {
             GatewayOnBitsUsedDelegate WrapperDelegate = (UserData, Pointer) =>
             {
-                MGW_BitsUsed Value = Pointer[0];
+                MGW_BitsUsed Value = Marshal.PtrToStructure<MGW_BitsUsed>(Pointer);
 
                 BitsUsed Used = new BitsUsed();
                 Used.TransactionID = Value.TransactionID;
