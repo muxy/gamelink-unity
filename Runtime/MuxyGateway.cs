@@ -432,7 +432,7 @@ namespace MuxyGateway
 
         public delegate void OnActionUsedDelegate(ActionUsed Used);
         private GCHandle ActionUsedDelegateHandle;
-        public void OnACtionUsed(OnActionUsedDelegate Delegate)
+        public void OnActionUsed(OnActionUsedDelegate Delegate)
         {
             GatewayOnActionUsedDelegate WrapperDelegate = (UserData, Pointer) =>
             {
