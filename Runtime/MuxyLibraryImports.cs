@@ -231,6 +231,12 @@ namespace MuxyGameLink.Imports
             public String SKU;
 
             public Int32 Bits;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String UserID;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String Username;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -240,7 +246,7 @@ namespace MuxyGameLink.Imports
             public String TransactionID;
 
             [MarshalAs(UnmanagedType.LPUTF8Str)]
-            public String SKU;
+            public String ActionID;
 
             public Int32 Cost;
 

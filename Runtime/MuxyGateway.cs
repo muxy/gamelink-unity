@@ -124,12 +124,14 @@ namespace MuxyGateway
         public string TransactionID { set; get; } = string.Empty;
         public string SKU { set; get; } = string.Empty;
         public int Bits { set; get; } = 0;
+        public string UserID { set; get; } = string.Empty;
+        public string Username { set; get; } = string.Empty;
     }
 
     public class ActionUsed
     {
         public string TransactionID { set; get; } = string.Empty;
-        public string SKU { set; get; } = string.Empty;
+        public string ActionID { set; get; } = string.Empty;
         public int Cost { set; get; } = 0;
         public string UserID { set; get; } = string.Empty;
         public string Username { set; get; } = string.Empty;
@@ -442,7 +444,7 @@ namespace MuxyGateway
 
                 ActionUsed Used = new ActionUsed();
                 Used.TransactionID = Value.TransactionID;
-                Used.SKU = Value.SKU;
+                Used.ActionID = Value.ActionID;
                 Used.Cost = Value.Cost;
                 Used.UserID = Value.UserID;
                 Used.Username = Value.Username;
@@ -459,7 +461,7 @@ namespace MuxyGateway
         public void AcceptAction(ActionUsed Used, string Description)
         {
             MGW_ActionUsed Native = new MGW_ActionUsed();
-            Native.SKU = Used.SKU;
+            Native.ActionID = Used.ActionID;
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
             Native.UserID = Used.UserID;
@@ -471,7 +473,7 @@ namespace MuxyGateway
         public void RefundAction(ActionUsed Used, string Description)
         {
             MGW_ActionUsed Native = new MGW_ActionUsed();
-            Native.SKU = Used.SKU;
+            Native.ActionID = Used.ActionID;
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
             Native.UserID = Used.UserID;
@@ -494,6 +496,8 @@ namespace MuxyGateway
                 Used.TransactionID = Value.TransactionID;
                 Used.SKU = Value.SKU;
                 Used.Bits = Value.Bits;
+                Used.UserID = Value.UserID;
+                Used.Username = Value.Username;
 
                 Delegate(Used);
             };
