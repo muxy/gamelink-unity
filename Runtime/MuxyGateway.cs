@@ -17,7 +17,7 @@ namespace MuxyGateway
     {
         public WebsocketTransport()
             : base(true)
-        {}
+        { }
     };
 
 
@@ -124,13 +124,17 @@ namespace MuxyGateway
         public string TransactionID { set; get; } = string.Empty;
         public string SKU { set; get; } = string.Empty;
         public int Bits { set; get; } = 0;
+        public string UserID { set; get; } = string.Empty;
+        public string Username { set; get; } = string.Empty;
     }
 
     public class ActionUsed
     {
         public string TransactionID { set; get; } = string.Empty;
-        public string SKU { set; get; } = string.Empty;
+        public string ActionID { set; get; } = string.Empty;
         public int Cost { set; get; } = 0;
+        public string UserID { set; get; } = string.Empty;
+        public string Username { set; get; } = string.Empty;
     }
 
     public class SDK
@@ -238,7 +242,7 @@ namespace MuxyGateway
                 Response.JWT = NativeString.StringFromUTF8(resp.JWT);
                 Response.RefreshToken = NativeString.StringFromUTF8(resp.RefreshToken);
                 Response.TwitchUsername = NativeString.StringFromUTF8(resp.TwitchName);
-                Response.HasError = resp.HasError;
+                Response.HasError = resp.HasError != 0;
 
                 Delegate(Response);
 
@@ -260,7 +264,7 @@ namespace MuxyGateway
                 Response.JWT = NativeString.StringFromUTF8(resp.JWT);
                 Response.RefreshToken = NativeString.StringFromUTF8(resp.RefreshToken);
                 Response.TwitchUsername = NativeString.StringFromUTF8(resp.TwitchName);
-                Response.HasError = resp.HasError;
+                Response.HasError = resp.HasError != 0;
 
                 Delegate(Response);
 
@@ -360,7 +364,7 @@ namespace MuxyGateway
                 Update.Results = ResultList;
                 Update.Count = NativeUpdate.Count;
                 Update.Mean = NativeUpdate.Mean;
-                Update.IsFinal = NativeUpdate.IsFinal;
+                Update.IsFinal = NativeUpdate.IsFinal != 0;
 
                 Configuration.OnPollUpdate(Update);
             };
@@ -440,8 +444,10 @@ namespace MuxyGateway
 
                 ActionUsed Used = new ActionUsed();
                 Used.TransactionID = Value.TransactionID;
-                Used.SKU = Value.SKU;
+                Used.ActionID = Value.ActionID;
                 Used.Cost = Value.Cost;
+                Used.UserID = Value.UserID;
+                Used.Username = Value.Username;
 
                 Delegate(Used);
             };
@@ -452,24 +458,28 @@ namespace MuxyGateway
             Imported.MGW_SDK_OnActionUsed(Instance, WrapperDelegate, IntPtr.Zero);
         }
 
-        public void ValidateActionTransaction(ActionUsed Used, string Description)
+        public void AcceptAction(ActionUsed Used, string Description)
         {
             MGW_ActionUsed Native = new MGW_ActionUsed();
-            Native.SKU = Used.SKU;
+            Native.ActionID = Used.ActionID;
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
+            Native.UserID = Used.UserID;
+            Native.Username = Used.Username;
 
-            Imported.MGW_SDK_ValidateActionTransaction(Instance, Native, Description);
+            Imported.MGW_SDK_AcceptAction(Instance, Native, Description);
         }
 
-        public void RefundActionTransaction(ActionUsed Used, string Description)
+        public void RefundAction(ActionUsed Used, string Description)
         {
             MGW_ActionUsed Native = new MGW_ActionUsed();
-            Native.SKU = Used.SKU;
+            Native.ActionID = Used.ActionID;
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
+            Native.UserID = Used.UserID;
+            Native.Username = Used.Username;
 
-            Imported.MGW_SDK_RefundActionTransaction(Instance, Native, Description);
+            Imported.MGW_SDK_RefundAction(Instance, Native, Description);
         }
         #endregion
 
@@ -486,6 +496,8 @@ namespace MuxyGateway
                 Used.TransactionID = Value.TransactionID;
                 Used.SKU = Value.SKU;
                 Used.Bits = Value.Bits;
+                Used.UserID = Value.UserID;
+                Used.Username = Value.Username;
 
                 Delegate(Used);
             };

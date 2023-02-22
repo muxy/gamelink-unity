@@ -32,7 +32,7 @@ namespace MuxyGameLink
         private CancellationTokenSource TokenSource()
         {
             CancellationTokenSource src = new CancellationTokenSource();
-            src.CancelAfter(3000);
+            src.CancelAfter(5000);
 
             return src;
         }
