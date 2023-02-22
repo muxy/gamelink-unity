@@ -132,7 +132,7 @@ namespace MuxyGateway
         public string SKU { set; get; } = string.Empty;
         public int Cost { set; get; } = 0;
         public string UserID { set; get; } = string.Empty;
-        public string UserNickname { set; get; } = string.Empty;
+        public string Username { set; get; } = string.Empty;
     }
 
     public class SDK
@@ -240,7 +240,7 @@ namespace MuxyGateway
                 Response.JWT = NativeString.StringFromUTF8(resp.JWT);
                 Response.RefreshToken = NativeString.StringFromUTF8(resp.RefreshToken);
                 Response.TwitchUsername = NativeString.StringFromUTF8(resp.TwitchName);
-                Response.HasError = resp.HasError;
+                Response.HasError = resp.HasError != 0;
 
                 Delegate(Response);
 
@@ -262,7 +262,7 @@ namespace MuxyGateway
                 Response.JWT = NativeString.StringFromUTF8(resp.JWT);
                 Response.RefreshToken = NativeString.StringFromUTF8(resp.RefreshToken);
                 Response.TwitchUsername = NativeString.StringFromUTF8(resp.TwitchName);
-                Response.HasError = resp.HasError;
+                Response.HasError = resp.HasError != 0;
 
                 Delegate(Response);
 
@@ -362,7 +362,7 @@ namespace MuxyGateway
                 Update.Results = ResultList;
                 Update.Count = NativeUpdate.Count;
                 Update.Mean = NativeUpdate.Mean;
-                Update.IsFinal = NativeUpdate.IsFinal;
+                Update.IsFinal = NativeUpdate.IsFinal != 0;
 
                 Configuration.OnPollUpdate(Update);
             };
@@ -445,7 +445,7 @@ namespace MuxyGateway
                 Used.SKU = Value.SKU;
                 Used.Cost = Value.Cost;
                 Used.UserID = Value.UserID;
-                Used.UserNickname = Value.UserNickname;
+                Used.Username = Value.Username;
 
                 Delegate(Used);
             };
@@ -463,7 +463,7 @@ namespace MuxyGateway
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
             Native.UserID = Used.UserID;
-            Native.UserNickname = Used.UserNickname;
+            Native.Username = Used.Username;
 
             Imported.MGW_SDK_AcceptAction(Instance, Native, Description);
         }
@@ -475,7 +475,7 @@ namespace MuxyGateway
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
             Native.UserID = Used.UserID;
-            Native.UserNickname = Used.UserNickname;
+            Native.Username = Used.Username;
 
             Imported.MGW_SDK_RefundAction(Instance, Native, Description);
         }
