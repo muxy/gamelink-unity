@@ -17,7 +17,7 @@ namespace MuxyGateway
     {
         public WebsocketTransport()
             : base(true)
-        {}
+        { }
     };
 
 
@@ -131,6 +131,8 @@ namespace MuxyGateway
         public string TransactionID { set; get; } = string.Empty;
         public string SKU { set; get; } = string.Empty;
         public int Cost { set; get; } = 0;
+        public string UserID { set; get; } = string.Empty;
+        public string UserNickname { set; get; } = string.Empty;
     }
 
     public class SDK
@@ -442,6 +444,8 @@ namespace MuxyGateway
                 Used.TransactionID = Value.TransactionID;
                 Used.SKU = Value.SKU;
                 Used.Cost = Value.Cost;
+                Used.UserID = Value.UserID;
+                Used.UserNickname = Value.UserNickname;
 
                 Delegate(Used);
             };
@@ -452,24 +456,28 @@ namespace MuxyGateway
             Imported.MGW_SDK_OnActionUsed(Instance, WrapperDelegate, IntPtr.Zero);
         }
 
-        public void ValidateActionTransaction(ActionUsed Used, string Description)
+        public void AcceptAction(ActionUsed Used, string Description)
         {
             MGW_ActionUsed Native = new MGW_ActionUsed();
             Native.SKU = Used.SKU;
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
+            Native.UserID = Used.UserID;
+            Native.UserNickname = Used.UserNickname;
 
-            Imported.MGW_SDK_ValidateActionTransaction(Instance, Native, Description);
+            Imported.MGW_SDK_AcceptAction(Instance, Native, Description);
         }
 
-        public void RefundActionTransaction(ActionUsed Used, string Description)
+        public void RefundAction(ActionUsed Used, string Description)
         {
             MGW_ActionUsed Native = new MGW_ActionUsed();
             Native.SKU = Used.SKU;
             Native.TransactionID = Used.TransactionID;
             Native.Cost = Used.Cost;
+            Native.UserID = Used.UserID;
+            Native.UserNickname = Used.UserNickname;
 
-            Imported.MGW_SDK_RefundActionTransaction(Instance, Native, Description);
+            Imported.MGW_SDK_RefundAction(Instance, Native, Description);
         }
         #endregion
 

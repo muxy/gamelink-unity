@@ -232,6 +232,12 @@ namespace MuxyGameLink.Imports
             public String SKU;
 
             public Int32 Cost;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String UserID;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            public String UserNickname;
         }
     }
 
@@ -767,11 +773,11 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnActionUsed")]
         public static extern void MGW_SDK_OnActionUsed(Schema.GatewaySDK Gateway, GatewayOnActionUsedDelegate Callback, VoidPtr User);
 
-        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ValidateActionTransaction")]
-        public static extern void MGW_SDK_ValidateActionTransaction(Schema.GatewaySDK Gateway, MGW_ActionUsed Coins, [MarshalAs(UnmanagedType.LPUTF8Str)] String Reason);
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_AcceptAction")]
+        public static extern void MGW_SDK_AcceptAction(Schema.GatewaySDK Gateway, MGW_ActionUsed Coins, [MarshalAs(UnmanagedType.LPUTF8Str)] String Reason);
 
-        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_RefundActionTransaction")]
-        public static extern void MGW_SDK_RefundActionTransaction(Schema.GatewaySDK Gateway, MGW_ActionUsed Coins, [MarshalAs(UnmanagedType.LPUTF8Str)] String Reason);
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_RefundAction")]
+        public static extern void MGW_SDK_RefundAction(Schema.GatewaySDK Gateway, MGW_ActionUsed Coins, [MarshalAs(UnmanagedType.LPUTF8Str)] String Reason);
         #endregion
     }
 }
