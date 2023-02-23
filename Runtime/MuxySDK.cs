@@ -3,6 +3,10 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using MuxyGameLink.Imports;
 
+#if UNITY_EDITOR || UNITY_STANDALONE
+using UnityEngine;
+#endif
+
 namespace MuxyGameLink
 {
     public class SDK
@@ -42,6 +46,15 @@ namespace MuxyGameLink
             Imported.Kill(this.Instance);
         }
 
+        private void LogMessage(string message)
+        {
+#if UNITY_EDITOR || UNITY_STANDALONE
+            LogMessage(message);
+#else
+            Console.Error.WriteLine(message);
+#endif
+        }
+
         #region Authentication and User Management
         /// <summary> Check if we are currently authenticated </summary>
         /// <returns> Returns true if we are currently authenticated </returns>
@@ -61,13 +74,20 @@ namespace MuxyGameLink
             AuthenticateResponseDelegate WrapperCallback = ((UserData, AuthResp) =>
             {
                 AuthenticationResponse Response = new AuthenticationResponse(AuthResp);
-                Callback(Response);
+                try
+                {
+                    Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
                 Handle?.Free();
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
             return Imported.AuthenticateWithGameIDAndRefreshToken(this.Instance, this.ClientId, this.GameId, RefreshToken, WrapperCallback, IntPtr.Zero);
-     
+
         }
 
         /// <summary> Authenticate with a PIN </summary>
@@ -80,7 +100,14 @@ namespace MuxyGameLink
             AuthenticateResponseDelegate WrapperCallback = ((UserData, AuthResp) =>
             {
                 AuthenticationResponse Response = new AuthenticationResponse(AuthResp);
-                Callback(Response);
+                try
+                {
+                    Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
                 Handle?.Free();
             });
 
@@ -163,7 +190,14 @@ namespace MuxyGameLink
             StateGetDelegate WrapperCallback = ((UserData, StateResp) =>
             {
                 StateResponse Response = new StateResponse(StateResp);
-                Callback(Response);
+                try
+                {
+                    Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
                 Handle?.Free();
             });
 
@@ -304,7 +338,14 @@ namespace MuxyGameLink
             ConfigGetDelegate WrapperCallback = ((UserData, ConfigResp) =>
             {
                 ConfigResponse Response = new ConfigResponse(ConfigResp);
-                Callback(Response);
+                try
+                {
+                    Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
                 Handle?.Free();
             });
 
@@ -551,7 +592,14 @@ namespace MuxyGameLink
             GetOutstandingTransactionsDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetOutstandingTransactionsResponse Response) =>
             {
                 OutstandingTransactions Converted = new OutstandingTransactions(Response);
-                Callback(Converted);
+                try
+                {
+                    Callback(Converted);
+                }
+                catch (Exception e)
+                {
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
                 Handle?.Free();
             });
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
@@ -644,7 +692,14 @@ namespace MuxyGameLink
             GetPollResponseDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetPollResponse Response) =>
             {
                 GetPollResponse Converted = new GetPollResponse(Response);
-                Callback(Converted);
+                try
+                {
+                    Callback(Converted);
+                }
+                catch (Exception e)
+                {
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
                 Handle?.Free();
             });
 
@@ -747,6 +802,7 @@ namespace MuxyGameLink
 
         #endregion
 
+
         #region Metadata
         public class GameMetadata
         {
@@ -762,7 +818,38 @@ namespace MuxyGameLink
             Meta.GameName = InMeta.Name;
             Meta.Theme = InMeta.Theme;
 
-           return Imported.SetGameMetadata(Instance, Meta);
+            return Imported.SetGameMetadata(Instance, Meta);
+        }
+        #endregion
+
+        #region Drops
+        public delegate void GetDropsCallback(GetDropsResponse Resp);
+        public UInt16 GetDrops(String Status, GetDropsCallback Callback)
+        {
+            GCHandle? Handle = null;
+            GetDropsResponseDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetDropsResponse Resp) =>
+            {
+                GetDropsResponse Response = new(Resp);
+                try
+                {
+                    Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+                Handle?.Free();
+            });
+
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            UInt16 Result = Imported.GetDrops(this.Instance, Status, WrapperCallback, IntPtr.Zero);
+
+            return Result;
+        }
+
+        public UInt16 ValidateDrop(String DropId)
+        {
+            return Imported.ValidateDrop(this.Instance, DropId);
         }
         #endregion
 
