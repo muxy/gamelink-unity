@@ -277,7 +277,7 @@ namespace MuxyGameLink
         public async Task ReceiveMessage(SDK instance)
         {
             MemoryStream memory = new MemoryStream();
-            while (true)
+            while (!Done)
             {
                 try
                 {
@@ -317,8 +317,12 @@ namespace MuxyGameLink
                 }
             }
 
-            string input = UTF8Encoding.GetString(memory.ToArray());
+            if (memory.Length == 0)
+            {
+                return;
+            }
 
+            string input = UTF8Encoding.GetString(memory.ToArray());
             if (HandleMessagesInMainThread)
             {
                 Messages.Enqueue(input);
@@ -341,7 +345,8 @@ namespace MuxyGameLink
             }
 
             // Setup the reconnection setup.
-            for (int i = 0; i < 10; i++)
+            int i = 0;
+            while (true)
             {
                 Websocket = new ClientWebSocket();
 
@@ -361,22 +366,24 @@ namespace MuxyGameLink
                 catch (OperationCanceledException)
                 {
                     // Not connected.
-                    int waitMillis = 1000 * (i + 1);
-                    if (waitMillis > 5000)
+                    int waitMillis = 500 * (i*i + 1);
+                    if (waitMillis > 30000)
                     {
-                        waitMillis = 5000;
+                        waitMillis = 30000;
                     }
 
-                    Console.WriteLine("Attempting to reconnect. attempt={0}/10 wait={1}ms", i + 1, waitMillis);
+                    Console.WriteLine("Attempting to reconnect. attempt={0} wait={1}ms", i + 1, waitMillis);
                     Thread.Sleep(waitMillis);
                 }
+
+                i++;
             }
         }
 
         public async Task ReceiveMessage(MuxyGateway.SDK instance)
         {
             MemoryStream memory = new MemoryStream();
-            while (true)
+            while (!Done)
             {
                 try
                 {
@@ -440,7 +447,8 @@ namespace MuxyGameLink
             }
 
             // Setup the reconnection setup.
-            for (int i = 0; i < 10; i++)
+            int i = 0;
+            while(true)
             {
                 Websocket = new ClientWebSocket();
 
@@ -460,15 +468,17 @@ namespace MuxyGameLink
                 catch (OperationCanceledException)
                 {
                     // Not connected.
-                    int waitMillis = 1000 * (i + 1);
-                    if (waitMillis > 5000)
+                    int waitMillis = 500 * (i*i + 1);
+                    if (waitMillis > 30000)
                     {
-                        waitMillis = 5000;
+                        waitMillis = 30000;
                     }
 
-                    Console.WriteLine("Attempting to reconnect. attempt={0}/10 wait={1}ms", i + 1, waitMillis);
+                    Console.WriteLine("Attempting to reconnect. attempt={0} wait={1}ms", i + 1, waitMillis);
                     Thread.Sleep(waitMillis);
                 }
+
+                i++;
             }
         }
     }
