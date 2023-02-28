@@ -59,6 +59,11 @@ namespace MuxyGameLink
                     UnityEngine.Debug.Log("This may cause errors while playing in editor, but prevents leaking a connection, which is worse.");
                 }
             };
+
+            EditorApplication.quitting += () =>
+            {
+                Stop();
+            };
 #endif
         }
 
