@@ -65,7 +65,7 @@ namespace MuxyGateway
 
     public class Action
     {
-        public static int InfiniteCount = -1;
+        public static int InfiniteCount = 0xFFFF;
 
         public string ID { get; set; } = string.Empty;
 
