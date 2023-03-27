@@ -827,8 +827,17 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_DisableAction")]
         public static extern void MGW_SDK_DisableAction(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID);
 
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetActionMaximumCount")]
+        public static extern void MGW_SDK_SetActionMaximumCount(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID, Int32 count);
+
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetActionCount")]
         public static extern void MGW_SDK_SetActionCount(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID, Int32 count);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_IncrementActionCount")]
+        public static extern void MGW_SDK_IncrementActionCount(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID, Int32 count);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_DecrementActionCount")]
+        public static extern void MGW_SDK_DecrementActionCount(Schema.GatewaySDK Gateway, [MarshalAs(UnmanagedType.LPUTF8Str)] String ID, Int32 count);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_OnBitsUsed")]
         public static extern void MGW_SDK_OnBitsUsed(Schema.GatewaySDK Gateway, GatewayOnBitsUsedDelegate Callback, VoidPtr User);
