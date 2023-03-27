@@ -429,9 +429,24 @@ namespace MuxyGateway
             Imported.MGW_SDK_DisableAction(Instance, ID);
         }
 
+        public void SetMaximumActionCount(string ID, int Count)
+        {
+            Imported.MGW_SDK_SetActionMaximumCount(Instance, ID, Count);
+        }
+
         public void SetActionCount(string ID, int Count)
         {
             Imported.MGW_SDK_SetActionCount(Instance, ID, Count);
+        }
+
+        public void IncrementActionCount(string ID, int Delta)
+        {
+            Imported.MGW_SDK_IncrementActionCount(Instance, ID, Delta);
+        }
+
+        public void DecrementActionCount(string ID, int Delta)
+        {
+            Imported.MGW_SDK_DecrementActionCount(Instance, ID, Delta);
         }
 
         public delegate void OnActionUsedDelegate(ActionUsed Used);
