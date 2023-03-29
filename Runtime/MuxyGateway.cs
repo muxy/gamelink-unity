@@ -295,6 +295,48 @@ namespace MuxyGateway
 
             Imported.MGW_SDK_SetGameMetadata(Instance, Meta);
         }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        public void SetGameLogo(Texture2D texture)
+        {
+            MGW_GameMetadata meta = new MGW_GameMetadata();
+            meta.GameLogo = ConvertTextureToImage(texture);
+
+            Imported.MGW_SDK_SetGameMetadata(Instance, meta);
+        }
+
+        public static bool IsCompatibleFormat(TextureFormat format)
+        {
+            switch (format)
+            {
+                case TextureFormat.ARGB32:
+                case TextureFormat.RGB24:
+                case TextureFormat.RGBA32:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static string ConvertTextureToImage(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return "";
+            }
+
+            if (texture.isReadable)
+            {
+                if (IsCompatibleFormat(texture.format))
+                {
+                    byte[] fastPathBytes = texture.EncodeToPNG();
+                    return String.Format("data:image/png;base64,{0}", Convert.ToBase64String(fastPathBytes));
+                }
+            }
+
+            throw new ArgumentException("Texture must be readable and in RGB24 or RGBA32 format");
+        }
+#endif
         #endregion
 
         #region Game Texts
