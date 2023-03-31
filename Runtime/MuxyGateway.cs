@@ -145,10 +145,37 @@ namespace MuxyGateway
 
         private GCHandle DebugMessage;
 
+        WebsocketTransport Transport;
+
+        public void Update()
+        {
+            Transport.Update(this);
+        }
+
+        public void StopWebsocketTransport()
+        {
+            Transport.Stop();
+        }
+        public async void RunInCustom(String uri)
+        {
+            await Transport.Open(uri);
+            Transport.Run(this);
+        }
+        public void RunInSandbox()
+        {
+            Transport.OpenAndRunInSandbox(this);
+        }
+
+        public void RunInProduction()
+        {
+            Transport.OpenAndRunInProduction(this);
+        }
+
         public SDK(string GameID)
         {
             Instance = Imported.MGW_MakeSDK(GameID);
             this.GameID = GameID;
+            this.Transport = new();
 
             GatewayDebugMessageDelegate Callback = (UserData, Message) =>
             {
