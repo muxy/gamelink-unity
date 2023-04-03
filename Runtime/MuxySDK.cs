@@ -2,7 +2,10 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using MuxyGameLink.Imports;
+
+#if UNITY_EDITOR || UNITY_STANDALONE
 using UnityEngine;
+#endif
 
 namespace MuxyGameLink
 {
@@ -33,9 +36,23 @@ namespace MuxyGameLink
             OnMatchmakingUpdateHandles = new Dictionary<UInt32, GCHandle>();
         }
 
+        public SDK(String ClientId, String GameId) : this(ClientId)
+        {
+            this.GameId = GameId;
+        }
+
         ~SDK()
         {
             Imported.Kill(this.Instance);
+        }
+
+        private void LogMessage(string message)
+        {
+#if UNITY_EDITOR || UNITY_STANDALONE
+            LogMessage(message);
+#else
+            Console.Error.WriteLine(message);
+#endif
         }
 
         #region Authentication and User Management
@@ -63,14 +80,14 @@ namespace MuxyGameLink
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Callbacks cannot throw, caught and discarded exception: " + e);
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
                 Handle?.Free();
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.AuthenticateWithRefreshToken(this.Instance, this.ClientId, RefreshToken, WrapperCallback, IntPtr.Zero);
-     
+            return Imported.AuthenticateWithGameIDAndRefreshToken(this.Instance, this.ClientId, this.GameId, RefreshToken, WrapperCallback, IntPtr.Zero);
+
         }
 
         /// <summary> Authenticate with a PIN </summary>
@@ -89,13 +106,13 @@ namespace MuxyGameLink
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Callbacks cannot throw, caught and discarded exception: " + e);
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
                 Handle?.Free();
             });
 
             Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
-            return Imported.AuthenticateWithPIN(this.Instance, this.ClientId, PIN, WrapperCallback, IntPtr.Zero);
+            return Imported.AuthenticateWithGameIDAndPIN(this.Instance, this.ClientId, this.GameId, PIN, WrapperCallback, IntPtr.Zero);
         }
 
         public User User
@@ -145,6 +162,11 @@ namespace MuxyGameLink
             Imported.ForeachPayload(this.Instance, WrapperCallback, IntPtr.Zero);
             Handle.Free();
         }
+
+        public void HandleReconnect()
+        {
+            Imported.HandleReconnect(Instance);
+        }
         #endregion
 
         #region State Operations
@@ -174,7 +196,7 @@ namespace MuxyGameLink
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Callbacks cannot throw, caught and discarded exception: " + e);
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
                 Handle?.Free();
             });
@@ -322,7 +344,7 @@ namespace MuxyGameLink
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Callbacks cannot throw, caught and discarded exception: " + e);
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
                 Handle?.Free();
             });
@@ -576,7 +598,7 @@ namespace MuxyGameLink
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Callbacks cannot throw, caught and discarded exception: " + e);
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
                 Handle?.Free();
             });
@@ -676,7 +698,7 @@ namespace MuxyGameLink
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Callbacks cannot throw, caught and discarded exception: " + e);
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
                 Handle?.Free();
             });
@@ -780,9 +802,28 @@ namespace MuxyGameLink
 
         #endregion
 
+
+        #region Metadata
+        public class GameMetadata
+        {
+            public string Name { get; set; } = string.Empty;
+            public string Logo { get; set; } = string.Empty;
+            public string Theme { get; set; } = string.Empty;
+        }
+
+        public UInt16 SetGameMetadata(GameMetadata InMeta)
+        {
+            Imports.Schema.GameMetadata Meta = new();
+            Meta.GameLogo = InMeta.Logo;
+            Meta.GameName = InMeta.Name;
+            Meta.Theme = InMeta.Theme;
+
+            return Imported.SetGameMetadata(Instance, Meta);
+        }
+        #endregion
+
         #region Drops
         public delegate void GetDropsCallback(GetDropsResponse Resp);
-
         public UInt16 GetDrops(String Status, GetDropsCallback Callback)
         {
             GCHandle? Handle = null;
@@ -795,7 +836,7 @@ namespace MuxyGameLink
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Callbacks cannot throw, caught and discarded exception: " + e);
+                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
                 Handle?.Free();
             });
@@ -887,7 +928,8 @@ namespace MuxyGameLink
 
             OnDebugMessageHandle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
             Imported.OnDebugMessage(this.Instance, WrapperCallback, IntPtr.Zero);
-        }  
+        }
+        
         /// <summary> Detach callback for debug messages </summary>
         /// <param name="Handle"> Handle to detach </param>
         public void DetachOnDebugMessage()
@@ -900,10 +942,9 @@ namespace MuxyGameLink
         }
         #endregion
 
-
-
         #region Members
-        public String ClientId {get; set;}
+        public String ClientId { get; set; } = string.Empty;
+        public String GameId { get; set; } = string.Empty;
 
         private SDKInstance Instance;
         private User CachedUserInstance;
