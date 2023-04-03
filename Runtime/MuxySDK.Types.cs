@@ -84,7 +84,7 @@ namespace MuxyGameLink
 
     public class AuthenticationResponse : HasError
     {
-        public AuthenticationResponse(Imports.Schema.AuthenticateResponse Obj) 
+        public AuthenticationResponse(Imports.Schema.AuthenticateResponse Obj)
             : base(Obj.Obj)
         { }
     }
@@ -185,7 +185,7 @@ namespace MuxyGameLink
 
             this.Json = NativeString.StringFromUTF8AndDeallocate(Imported.Schema_StateResponse_GetJson(Obj));
         }
-      
+
         public String Json { get; private set; }
     }
 
@@ -238,7 +238,7 @@ namespace MuxyGameLink
             this.ConfigId = NativeString.StringFromUTF8(Imported.Schema_ConfigUpdateResponse_GetConfigID(Obj));
             this.Json = NativeString.StringFromUTF8AndDeallocate(Imported.Schema_ConfigUpdateResponse_GetJson(Obj));
         }
-        
+
         public String ConfigId { get; private set; }
         public String Json { get; private set; }
     }
@@ -374,50 +374,6 @@ namespace MuxyGameLink
         public bool IsFollower { get; private set; }
         public int SubscriptionTier { get; private set; }
         public int BitsSpent { get; private set; }
-    }
-
-    public class GetDropsResponse : HasError
-    {
-
-        public struct Drop
-        {
-            public String Id { get; private set; }
-            public String BenefitId { get; private set; }
-            public String UserId { get; private set; }
-            public String Status { get; private set; }
-            public String Service { get; private set; }
-            public String UpdatedAt { get; private set; }
-
-            public Drop(Imports.Schema.Drop Obj)
-            {
-                this.Id = NativeString.StringFromUTF8(Imported.Drop_GetId(Obj));
-                this.BenefitId = NativeString.StringFromUTF8(Imported.Drop_GetBenefitId(Obj));
-                this.UserId = NativeString.StringFromUTF8(Imported.Drop_GetUserId(Obj));
-                this.Status = NativeString.StringFromUTF8(Imported.Drop_GetStatus(Obj));
-                this.Service = NativeString.StringFromUTF8(Imported.Drop_GetService(Obj));
-                this.UpdatedAt = NativeString.StringFromUTF8(Imported.Drop_GetUpdatedAt(Obj));
-            }
-        };
-
-        public GetDropsResponse(Imports.Schema.GetDropsResponse Obj)
-            : base(Obj.Obj)
-        {
-            Drops = new List<Drop>();
-
-            if (GetFirstError() != null)
-            {
-                return;
-            }
-
-            for (UInt64 i = 0; i < Imported.GetDropsResponse_GetCount(Obj); i++)
-            {
-                Drop D = new(Imported.GetDropsResponse_GetAt(Obj, i));
-                Drops.Add(D);
-            }
-
-        }
-
-        public List<Drop> Drops { get; private set; }
     }
 
     public class GetDropsResponse : HasError
