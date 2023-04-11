@@ -303,6 +303,15 @@ namespace MuxyGateway
             Imported.MGW_SDK_AuthenticateWithRefreshToken(Instance, Refresh, WrapperCallback, (IntPtr)Handle);
         }
 
+        public void Deauthenticate()
+        {
+            Imported.MGW_SDK_Deauthenticate(Instance);
+            if (Transport != null)
+            {
+                Transport.Disconnect();
+            }
+        }
+
         public bool IsAuthenticated
         {
             get

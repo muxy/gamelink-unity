@@ -131,6 +131,11 @@ namespace MuxyGameLink
             OpenAndRunInStage(instance, Stage.Production);
         }
 
+        public void Disconnect()
+        {
+            Stop();
+        }
+
         /// <summary>
         /// Sends all queued messages in the instance
         /// </summary>
@@ -264,14 +269,23 @@ namespace MuxyGameLink
                     Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token);
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // Ignore.
+                Console.WriteLine(e.ToString());
             }
 
             UnboundedCancellationSource.Cancel();
-            WriteThread.Join();
-            ReadThread.Join();
+            if (WriteThread != null)
+            {
+                WriteThread.Join();
+            }
+
+            if (ReadThread != null)
+            {
+                ReadThread.Join();
+            }
+
+            UnboundedCancellationSource = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -351,7 +365,7 @@ namespace MuxyGameLink
 
             // Setup the reconnection setup.
             int i = 0;
-            while (true)
+            while (!Done)
             {
                 Websocket = new ClientWebSocket();
 
@@ -361,8 +375,6 @@ namespace MuxyGameLink
                     {
                         await Websocket.ConnectAsync(TargetUri, src.Token)
                             .ConfigureAwait(false);
-
-                        Console.WriteLine("Connected?");
 
                         instance.HandleReconnect();
                         return;

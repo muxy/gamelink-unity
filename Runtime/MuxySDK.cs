@@ -115,6 +115,11 @@ namespace MuxyGameLink
             return Imported.AuthenticateWithGameIDAndPIN(this.Instance, this.ClientId, this.GameId, PIN, WrapperCallback, IntPtr.Zero);
         }
 
+        public UInt16 Deauthenticate()
+        {
+            return Imported.Deauthenticate(this.Instance);
+        }
+
         public User User
         {
             get
