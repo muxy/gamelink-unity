@@ -370,11 +370,15 @@ namespace MuxyGameLink.Imports
                                                                    String ClientId, String GameId, String PIN,
                                                                    AuthenticateResponseDelegate Callback,
                                                                    VoidPtr UserData);
+
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_AuthenticateWithGameIDAndRefreshToken")]
         public static extern UInt16 AuthenticateWithGameIDAndRefreshToken(SDKInstance GameLink,
                                                                    String ClientId, String GameId, String RefreshToken,
                                                                    AuthenticateResponseDelegate Callback,
                                                                    VoidPtr UserData);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Deauthenticate")]
+        public static extern UInt16 Deauthenticate(SDKInstance GameLink);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_IsAuthenticated")]
         public static extern bool IsAuthenticated(SDKInstance GameLink);
@@ -784,6 +788,9 @@ namespace MuxyGameLink.Imports
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_AuthenticateWithRefreshToken")]
         public static extern RequestId MGW_SDK_AuthenticateWithRefreshToken(Schema.GatewaySDK SDK, [MarshalAs(UnmanagedType.LPUTF8Str)] String Refresh, GatewayAuthenticateResponseDelegate Delegate, VoidPtr User);
+
+        [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_Deauthenticate")]
+        public static extern RequestId MGW_SDK_Deauthenticate(Schema.GatewaySDK SDK);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ReceiveMessage")]
         public static extern bool MGW_SDK_ReceiveMessage(Schema.GatewaySDK SDK, byte[] Message, uint BytesLength);
