@@ -55,21 +55,29 @@ namespace MuxyGameLink
                     // This is bad, prevent this by attaching an event to stop the websocket connection
                     // when the editor stops the PIE mode.
                     UnityEngine.Debug.Log("Stopping websocket transport due to editor state change.");
-                    StopAsync().RunSynchronously();
+                    StopAsync().Wait();
+
                     UnityEngine.Debug.Log("This may cause errors while playing in editor, but prevents leaking a connection, which is worse.");
                 }
             };
 
             EditorApplication.quitting += () =>
             {
-                StopAsync().RunSynchronously();
+                    UnityEngine.Debug.Log("Stopping due to application quit.");
+                    StopAsync().Wait();
             };
 #endif
         }
 
         ~WebsocketTransport()
         {
-            StopAsync().RunSynchronously();
+            try
+            {
+                StopAsync().Wait();
+            }
+            catch (InvalidOperationException)
+            {
+            }
         }
 
         /// <summary>
@@ -267,10 +275,13 @@ namespace MuxyGameLink
 
             try
             {
-                using (CancellationTokenSource src = TokenSource())
+                if (Websocket.State != WebSocketState.Closed)
                 {
-                    await Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token)
-                        .ConfigureAwait(false);
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token)
+                            .ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception e)

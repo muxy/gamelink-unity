@@ -191,8 +191,14 @@ namespace MuxyGateway
 
         ~SDK()
         {
-            Transport.StopAsync().RunSynchronously();
-            Imported.MGW_KillSDK(Instance);
+            try
+            {
+                Transport.StopAsync().Wait();
+            }
+            finally
+            {
+                Imported.MGW_KillSDK(Instance);
+            }
         }
 
         private void LogMessage(string Message)
