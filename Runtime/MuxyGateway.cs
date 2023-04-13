@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System;
+using System.Threading.Tasks;
 
 #if UNITY_EDITOR || UNITY_STANDALONE
 using UnityEngine;
@@ -154,13 +155,15 @@ namespace MuxyGateway
 
         public void StopWebsocketTransport()
         {
-            Transport.Stop();
+            Transport.StopAsync();
         }
-        public async void RunInCustom(String uri)
+
+        public async Task RunInCustomAsync(String uri)
         {
             await Transport.Open(uri);
             Transport.Run(this);
         }
+
         public void RunInSandbox()
         {
             Transport.OpenAndRunInSandbox(this);
@@ -188,6 +191,7 @@ namespace MuxyGateway
 
         ~SDK()
         {
+            Transport.StopAsync().RunSynchronously();
             Imported.MGW_KillSDK(Instance);
         }
 
@@ -305,11 +309,11 @@ namespace MuxyGateway
 
         public void Deauthenticate()
         {
-            Imported.MGW_SDK_Deauthenticate(Instance);
             if (Transport != null)
             {
                 Transport.Disconnect();
             }
+            Imported.MGW_SDK_Deauthenticate(Instance);
         }
 
         public bool IsAuthenticated

@@ -55,21 +55,21 @@ namespace MuxyGameLink
                     // This is bad, prevent this by attaching an event to stop the websocket connection
                     // when the editor stops the PIE mode.
                     UnityEngine.Debug.Log("Stopping websocket transport due to editor state change.");
-                    Stop();
+                    StopAsync().RunSynchronously();
                     UnityEngine.Debug.Log("This may cause errors while playing in editor, but prevents leaking a connection, which is worse.");
                 }
             };
 
             EditorApplication.quitting += () =>
             {
-                Stop();
+                StopAsync().RunSynchronously();
             };
 #endif
         }
 
         ~WebsocketTransport()
         {
-            Stop();
+            StopAsync().RunSynchronously();
         }
 
         /// <summary>
@@ -95,25 +95,28 @@ namespace MuxyGameLink
         /// <param name="stage"></param>
         public async void OpenAndRunInStage(SDK instance, Stage stage)
         {
-            await Open("ws://" + instance.ConnectionAddress(stage));
+            await Open("ws://" + instance.ConnectionAddress(stage))
+                .ConfigureAwait(false);
             Run(instance);
         }
 
-        private async void OpenAndRunInStage(MuxyGateway.SDK instance, Stage stage)
+        private async Task OpenAndRunInStage(MuxyGateway.SDK instance, Stage stage)
         {
             switch (stage)
             {
                 case Stage.Sandbox:
                     {
                         string url = instance.GetSandboxURL();
-                        await Open("ws://" + url);
+                        await Open("ws://" + url)
+                            .ConfigureAwait(false);
                         break;
                     }
 
                 case Stage.Production:
                     {
                         string url = instance.GetProductionURL();
-                        await Open("ws://" + url);
+                        await Open("ws://" + url)
+                            .ConfigureAwait(false);
                         break;
                     }
             }
@@ -133,7 +136,7 @@ namespace MuxyGameLink
 
         public void Disconnect()
         {
-            Stop();
+            StopAsync();
         }
 
         /// <summary>
@@ -258,7 +261,7 @@ namespace MuxyGameLink
         /// <summary>
         ///  Stops writing and reading threads.
         /// </summary>
-        public void Stop()
+        public async Task StopAsync()
         {
             Done = true;
 
@@ -266,7 +269,8 @@ namespace MuxyGameLink
             {
                 using (CancellationTokenSource src = TokenSource())
                 {
-                    Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token);
+                    await Websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "going away", src.Token)
+                        .ConfigureAwait(false);
                 }
             }
             catch (Exception e)
@@ -383,7 +387,7 @@ namespace MuxyGameLink
                 catch (OperationCanceledException)
                 {
                     // Not connected.
-                    int waitMillis = 500 * (i*i + 1);
+                    int waitMillis = 500 * (i * i + 1);
                     if (waitMillis > 30000)
                     {
                         waitMillis = 30000;
@@ -465,7 +469,7 @@ namespace MuxyGameLink
 
             // Setup the reconnection setup.
             int i = 0;
-            while(true)
+            while (!Done)
             {
                 Websocket = new ClientWebSocket();
 
@@ -485,7 +489,7 @@ namespace MuxyGameLink
                 catch (OperationCanceledException)
                 {
                     // Not connected.
-                    int waitMillis = 500 * (i*i + 1);
+                    int waitMillis = 500 * (i * i + 1);
                     if (waitMillis > 30000)
                     {
                         waitMillis = 30000;
