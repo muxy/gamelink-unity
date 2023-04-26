@@ -63,8 +63,8 @@ namespace MuxyGameLink
 
             EditorApplication.quitting += () =>
             {
-                    UnityEngine.Debug.Log("Stopping due to application quit.");
-                    StopAsync().Wait();
+                UnityEngine.Debug.Log("Stopping due to application quit.");
+                StopAsync().Wait();
             };
 #endif
         }
@@ -132,14 +132,14 @@ namespace MuxyGameLink
             Run(instance);
         }
 
-        public void OpenAndRunInSandbox(MuxyGateway.SDK instance)
+        public Task OpenAndRunInSandbox(MuxyGateway.SDK instance)
         {
-            OpenAndRunInStage(instance, Stage.Sandbox);
+            return OpenAndRunInStage(instance, Stage.Sandbox);
         }
 
-        public void OpenAndRunInProduction(MuxyGateway.SDK instance)
+        public Task OpenAndRunInProduction(MuxyGateway.SDK instance)
         {
-            OpenAndRunInStage(instance, Stage.Production);
+            return OpenAndRunInStage(instance, Stage.Production);
         }
 
         public void Disconnect()
@@ -160,20 +160,41 @@ namespace MuxyGameLink
                 messages.Add(Payload);
             });
 
-            foreach (string msg in messages)
+            try
             {
-                var bytes = new ArraySegment<byte>(UTF8Encoding.GetBytes(msg));
-
-                using (CancellationTokenSource src = TokenSource())
+                foreach (string msg in messages)
                 {
-                    await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
-                        .ConfigureAwait(false);
+                    var bytes = new ArraySegment<byte>(UTF8Encoding.GetBytes(msg));
+
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+            } 
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine(ex.ToString());
+
+                if (!Done)
+                {
+                    await AttemptReconnect(instance);
+                }
+                else
+                {
+                    return;
                 }
             }
         }
 
         public async Task SendMessages(MuxyGateway.SDK instance)
         {
+            if (Websocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
             List<byte[]> messages = new List<byte[]>();
 
             instance.ForeachPayload((MuxyGateway.Payload Payload) =>
@@ -181,14 +202,30 @@ namespace MuxyGameLink
                 messages.Add(Payload.Bytes);
             });
 
-            foreach (byte[] msg in messages)
+            try
             {
-                var bytes = new ArraySegment<byte>(msg);
-
-                using (CancellationTokenSource src = TokenSource())
+                foreach (byte[] msg in messages)
                 {
-                    await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
-                        .ConfigureAwait(false);
+                    var bytes = new ArraySegment<byte>(msg);
+
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+            } 
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine(ex.ToString());
+
+                if (!Done)
+                {
+                    await AttemptReconnect(instance);
+                }
+                else
+                {
+                    return;
                 }
             }
         }
@@ -284,20 +321,20 @@ namespace MuxyGameLink
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(e.ToString());
+                // Ignore
             }
 
             UnboundedCancellationSource.Cancel();
             if (WriteThread != null)
             {
-                WriteThread.Join();
+                WriteThread.Join(TimeSpan.FromSeconds(5));
             }
 
             if (ReadThread != null)
             {
-                ReadThread.Join();
+                ReadThread.Join(TimeSpan.FromSeconds(5));
             }
 
             UnboundedCancellationSource = new CancellationTokenSource();
@@ -367,14 +404,28 @@ namespace MuxyGameLink
             }
         }
 
+        private bool Reconnecting = false;
         private async Task AttemptReconnect(SDK instance)
         {
+            if (Reconnecting)
+            {
+                return;
+            }
+
+            Reconnecting = true;
             if (Websocket.State != WebSocketState.Aborted)
             {
-                using (CancellationTokenSource src = TokenSource())
+                try
                 {
-                    await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
-                        .ConfigureAwait(false);
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
+                            .ConfigureAwait(false);
+                    }
+                } 
+                catch (InvalidOperationException ex)
+                {
+                    // Ignore this one
                 }
             }
 
@@ -392,6 +443,7 @@ namespace MuxyGameLink
                             .ConfigureAwait(false);
 
                         instance.HandleReconnect();
+                        Reconnecting = false;
                         return;
                     }
                 }
@@ -442,8 +494,6 @@ namespace MuxyGameLink
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.ToString());
-
                     if (!Done)
                     {
                         await AttemptReconnect(instance);
@@ -469,12 +519,26 @@ namespace MuxyGameLink
 
         private async Task AttemptReconnect(MuxyGateway.SDK instance)
         {
+            if (Reconnecting)
+            {
+                return;
+            }
+
+            Reconnecting = true;
+
             if (Websocket.State != WebSocketState.Aborted)
             {
-                using (CancellationTokenSource src = TokenSource())
+                try
                 {
-                    await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
-                        .ConfigureAwait(false);
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // Ignore this one
                 }
             }
 
@@ -491,9 +555,8 @@ namespace MuxyGameLink
                         await Websocket.ConnectAsync(TargetUri, src.Token)
                             .ConfigureAwait(false);
 
-                        Console.WriteLine("Connected?");
-
                         instance.HandleReconnect();
+                        Reconnecting = false;
                         return;
                     }
                 }
