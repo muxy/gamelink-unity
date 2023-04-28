@@ -85,9 +85,8 @@ namespace MuxyGameLink
                 Handle?.Free();
             });
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             return Imported.AuthenticateWithGameIDAndRefreshToken(this.Instance, this.ClientId, this.GameId, RefreshToken, WrapperCallback, IntPtr.Zero);
-
         }
 
         /// <summary> Authenticate with a PIN </summary>
@@ -111,7 +110,7 @@ namespace MuxyGameLink
                 Handle?.Free();
             });
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             return Imported.AuthenticateWithGameIDAndPIN(this.Instance, this.ClientId, this.GameId, PIN, WrapperCallback, IntPtr.Zero);
         }
 
@@ -163,7 +162,7 @@ namespace MuxyGameLink
                 Callback(str);
             });
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             Imported.ForeachPayload(this.Instance, WrapperCallback, IntPtr.Zero);
             Handle.Free();
         }
@@ -206,7 +205,7 @@ namespace MuxyGameLink
                 Handle?.Free();
             });
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             return Imported.GetState(this.Instance, (Int32)Target, WrapperCallback, IntPtr.Zero);
         }
 
@@ -300,7 +299,7 @@ namespace MuxyGameLink
                 Callback(Response);
             });
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             UInt32 Result = Imported.OnStateUpdate(this.Instance, WrapperCallback, IntPtr.Zero);
 
             OnStateUpdateHandles.Add(Result, Handle);
@@ -354,7 +353,7 @@ namespace MuxyGameLink
                 Handle?.Free();
             });
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             return Imported.GetConfig(this.Instance, (Int32)Target, WrapperCallback, IntPtr.Zero);
         }
 
@@ -435,7 +434,7 @@ namespace MuxyGameLink
                 Callback(Response);
             });
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             UInt32 Result = Imported.OnConfigUpdate(this.Instance, WrapperCallback, IntPtr.Zero);
 
             OnConfigUpdateHandles.Add(Result, Handle);
@@ -502,7 +501,7 @@ namespace MuxyGameLink
                 Callback(Response);
             });
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             UInt32 Result = Imported.OnDatastream(this.Instance, WrapperCallback, IntPtr.Zero);
 
             OnDatastreamHandles.Add(Result, Handle);
@@ -565,8 +564,8 @@ namespace MuxyGameLink
                 Transaction Converted = new Transaction(Response);
                 Callback(Converted);
             });
-
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+                
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             UInt32 Result = Imported.OnTransaction(this.Instance, WrapperCallback, IntPtr.Zero);
 
             OnTransactionHandles.Add(Result, Handle);
@@ -607,7 +606,7 @@ namespace MuxyGameLink
                 }
                 Handle?.Free();
             });
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             return Imported.GetOutstandingTransactions(this.Instance, SKU, WrapperCallback, IntPtr.Zero);
         }
 
@@ -708,7 +707,7 @@ namespace MuxyGameLink
                 Handle?.Free();
             });
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             return Imported.GetPoll(this.Instance, PollId, WrapperCallback, IntPtr.Zero);
         }
 
@@ -724,7 +723,7 @@ namespace MuxyGameLink
                 Callback(Response);
             });
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             UInt32 Result = Imported.OnPollUpdate(this.Instance, WrapperCallback, IntPtr.Zero);
 
             OnPollUpdateHandles.Add(Result, Handle);
@@ -785,7 +784,7 @@ namespace MuxyGameLink
                 Callback(Response);
             });
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             UInt32 Result = Imported.OnMatchmakingQueueInvite(this.Instance, WrapperCallback, IntPtr.Zero);
 
             OnMatchmakingUpdateHandles.Add(Result, Handle);
@@ -846,7 +845,7 @@ namespace MuxyGameLink
                 Handle?.Free();
             });
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             UInt16 Result = Imported.GetDrops(this.Instance, Status, WrapperCallback, IntPtr.Zero);
 
             return Result;
@@ -931,7 +930,7 @@ namespace MuxyGameLink
                 Callback(Message);
             });
 
-            OnDebugMessageHandle = GCHandle.Alloc(WrapperCallback, GCHandleType.Pinned);
+            OnDebugMessageHandle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
             Imported.OnDebugMessage(this.Instance, WrapperCallback, IntPtr.Zero);
         }
         

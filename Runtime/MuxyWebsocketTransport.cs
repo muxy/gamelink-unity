@@ -148,89 +148,6 @@ namespace MuxyGameLink
         }
 
         /// <summary>
-        /// Sends all queued messages in the instance
-        /// </summary>
-        /// <param name="instance">instance to send messages from</param>
-        /// <returns></returns>
-        public async Task SendMessages(SDK instance)
-        {
-            List<string> messages = new List<string>();
-            instance.ForEachPayload((string Payload) =>
-            {
-                messages.Add(Payload);
-            });
-
-            try
-            {
-                foreach (string msg in messages)
-                {
-                    var bytes = new ArraySegment<byte>(UTF8Encoding.GetBytes(msg));
-
-                    using (CancellationTokenSource src = TokenSource())
-                    {
-                        await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
-                            .ConfigureAwait(false);
-                    }
-                }
-            } 
-            catch (InvalidOperationException ex)
-            {
-                Console.WriteLine(ex.ToString());
-
-                if (!Done)
-                {
-                    await AttemptReconnect(instance);
-                }
-                else
-                {
-                    return;
-                }
-            }
-        }
-
-        public async Task SendMessages(MuxyGateway.SDK instance)
-        {
-            if (Websocket.State != WebSocketState.Open)
-            {
-                return;
-            }
-
-            List<byte[]> messages = new List<byte[]>();
-
-            instance.ForeachPayload((MuxyGateway.Payload Payload) =>
-            {
-                messages.Add(Payload.Bytes);
-            });
-
-            try
-            {
-                foreach (byte[] msg in messages)
-                {
-                    var bytes = new ArraySegment<byte>(msg);
-
-                    using (CancellationTokenSource src = TokenSource())
-                    {
-                        await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
-                            .ConfigureAwait(false);
-                    }
-                }
-            } 
-            catch (InvalidOperationException ex)
-            {
-                Console.WriteLine(ex.ToString());
-
-                if (!Done)
-                {
-                    await AttemptReconnect(instance);
-                }
-                else
-                {
-                    return;
-                }
-            }
-        }
-
-        /// <summary>
         ///  Invokes SendMessages and ReceiveMessage on different threads until a call to Stop()
         ///  Any callbacks invoked from `instance` will be called on a background thread, not the main thread.
         /// </summary>
@@ -341,6 +258,104 @@ namespace MuxyGameLink
         }
 
         /// <summary>
+        /// Sends all queued messages in the instance
+        /// </summary>
+        /// <param name="instance">instance to send messages from</param>
+        /// <returns></returns>
+        public async Task SendMessages(SDK instance)
+        {
+            if (Websocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            if (Reconnecting)
+            {
+                return;
+            }
+
+            List<string> messages = new List<string>();
+            instance.ForEachPayload((string Payload) =>
+            {
+                messages.Add(Payload);
+            });
+
+            try
+            {
+                foreach (string msg in messages)
+                {
+                    var bytes = new ArraySegment<byte>(UTF8Encoding.GetBytes(msg));
+
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine(ex.ToString());
+
+                if (!Done)
+                {
+                    await AttemptReconnect(instance);
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+
+        public async Task SendMessages(MuxyGateway.SDK instance)
+        {
+            if (Websocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            if (Reconnecting)
+            {
+                return;
+            }
+
+            List<byte[]> messages = new List<byte[]>();
+
+            instance.ForeachPayload((MuxyGateway.Payload Payload) =>
+            {
+                messages.Add(Payload.Bytes);
+            });
+
+            try
+            {
+                foreach (byte[] msg in messages)
+                {
+                    var bytes = new ArraySegment<byte>(msg);
+
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.SendAsync(bytes, WebSocketMessageType.Text, true, src.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine(ex.ToString());
+
+                if (!Done)
+                {
+                    await AttemptReconnect(instance);
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
         ///  Receives a single message to the SDK from the active websocket connection.
         /// </summary>
         /// <param name="instance">The instance to receive a mesage to</param>
@@ -350,6 +365,18 @@ namespace MuxyGameLink
             MemoryStream memory = new MemoryStream();
             while (!Done)
             {
+                if (Websocket.State != WebSocketState.Open)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+
+                if (Reconnecting)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+
                 try
                 {
                     // Reading has an infinite timeout
@@ -404,71 +431,25 @@ namespace MuxyGameLink
             }
         }
 
-        private bool Reconnecting = false;
-        private async Task AttemptReconnect(SDK instance)
-        {
-            if (Reconnecting)
-            {
-                return;
-            }
-
-            Reconnecting = true;
-            if (Websocket.State != WebSocketState.Aborted)
-            {
-                try
-                {
-                    using (CancellationTokenSource src = TokenSource())
-                    {
-                        await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
-                            .ConfigureAwait(false);
-                    }
-                } 
-                catch (InvalidOperationException ex)
-                {
-                    // Ignore this one
-                }
-            }
-
-            // Setup the reconnection setup.
-            int i = 0;
-            while (!Done)
-            {
-                Websocket = new ClientWebSocket();
-
-                try
-                {
-                    using (CancellationTokenSource src = TokenSource())
-                    {
-                        await Websocket.ConnectAsync(TargetUri, src.Token)
-                            .ConfigureAwait(false);
-
-                        instance.HandleReconnect();
-                        Reconnecting = false;
-                        return;
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    // Not connected.
-                    int waitMillis = 500 * (i * i + 1);
-                    if (waitMillis > 30000)
-                    {
-                        waitMillis = 30000;
-                    }
-
-                    Console.WriteLine("Attempting to reconnect. attempt={0} wait={1}ms", i + 1, waitMillis);
-                    Thread.Sleep(waitMillis);
-                }
-
-                i++;
-            }
-        }
 
         public async Task ReceiveMessage(MuxyGateway.SDK instance)
         {
             MemoryStream memory = new MemoryStream();
             while (!Done)
             {
+                if (Websocket.State != WebSocketState.Open)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+
+                if (Reconnecting)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+
+
                 try
                 {
                     // Reading has an infinite timeout
@@ -514,6 +495,66 @@ namespace MuxyGameLink
             else
             {
                 instance.ReceiveMessage(input);
+            }
+        }
+
+        private bool Reconnecting = false;
+        private async Task AttemptReconnect(SDK instance)
+        {
+            if (Reconnecting)
+            {
+                return;
+            }
+
+            Reconnecting = true;
+            if (Websocket.State != WebSocketState.Aborted)
+            {
+                try
+                {
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "going away", src.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // Ignore this one
+                }
+            }
+
+            // Setup the reconnection setup.
+            int i = 0;
+            while (!Done)
+            {
+                Websocket = new ClientWebSocket();
+
+                try
+                {
+                    using (CancellationTokenSource src = TokenSource())
+                    {
+                        await Websocket.ConnectAsync(TargetUri, src.Token)
+                            .ConfigureAwait(false);
+
+                        instance.HandleReconnect();
+                        Reconnecting = false;
+                        return;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Not connected.
+                    int waitMillis = 500 * (i * i + 1);
+                    if (waitMillis > 30000)
+                    {
+                        waitMillis = 30000;
+                    }
+
+                    Console.WriteLine("Attempting to reconnect. attempt={0} wait={1}ms", i + 1, waitMillis);
+                    Thread.Sleep(waitMillis);
+                }
+
+                i++;
             }
         }
 
