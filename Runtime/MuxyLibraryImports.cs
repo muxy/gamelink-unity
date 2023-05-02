@@ -17,16 +17,19 @@ namespace MuxyGameLink.Imports
     using RequestId = UInt16;
 
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct SDKInstance
     {
         IntPtr Instance;
     };
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct NativeError
     {
         IntPtr Obj;
     };
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct Payload
     {
         IntPtr Data;
@@ -34,81 +37,97 @@ namespace MuxyGameLink.Imports
 
     namespace Schema
     {
+        [StructLayout(LayoutKind.Sequential)]
         public struct User
         {
             public IntPtr Obj;
         };
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct AuthenticateResponse
         {
             public IntPtr Obj;
         };
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct DatastreamUpdate
         {
             public IntPtr Obj;
         };
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct DatastreamEvent
         {
             public IntPtr Obj;
         };
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct TransactionResponse
         {
             public IntPtr Obj;
         };
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct GetPollResponse
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct MatchmakingUpdateResponse
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct GetOutstandingTransactionsResponse
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct PollUpdateResponse
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct StateResponse
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct StateUpdate
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct PatchList
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct ConfigResponse
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct ConfigUpdate
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct GetDropsResponse
         {
             public IntPtr Obj;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct Drop
         {
             public IntPtr Obj;
@@ -308,7 +327,9 @@ namespace MuxyGameLink.Imports
 
     public delegate void AuthenticateResponseDelegate(VoidPtr UserData, Schema.AuthenticateResponse AuthResp);
     public delegate void PayloadDelegate(VoidPtr UserData, Payload Payload);
+
     public delegate void DatastreamUpdateDelegate(VoidPtr UserData, Schema.DatastreamUpdate DatastreamUpdate);
+
     public delegate void TransactionResponseDelegate(VoidPtr UserData, Schema.TransactionResponse TPBResp);
     public delegate void GetOutstandingTransactionsDelegate(VoidPtr UserData, Schema.GetOutstandingTransactionsResponse Resp);
 
@@ -332,7 +353,6 @@ namespace MuxyGameLink.Imports
     public delegate void GatewayDebugMessageDelegate(VoidPtr UserData, [MarshalAs(UnmanagedType.LPUTF8Str)] String Message);
     public delegate void GatewayOnBitsUsedDelegate(VoidPtr UserData, IntPtr BitsUsed);
     public delegate void GatewayOnActionUsedDelegate(VoidPtr UserData, IntPtr ActionUsed);
-
 
     public class Imported
     {
@@ -381,10 +401,10 @@ namespace MuxyGameLink.Imports
         public static extern UInt16 Deauthenticate(SDKInstance GameLink);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_IsAuthenticated")]
-        public static extern bool IsAuthenticated(SDKInstance GameLink);
+        public static extern UInt32 IsAuthenticated(SDKInstance GameLink);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ReceiveMessage")]
-        public static extern bool ReceiveMessage(SDKInstance GameLink, [MarshalAs(UnmanagedType.LPUTF8Str)] String Bytes, uint BytesLength);
+        public static extern UInt32 ReceiveMessage(SDKInstance GameLink, [MarshalAs(UnmanagedType.LPUTF8Str)] String Bytes, uint BytesLength);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_ForeachPayload")]
         public static extern void ForeachPayload(SDKInstance GameLink, PayloadDelegate Callback, VoidPtr UserData);
@@ -413,7 +433,7 @@ namespace MuxyGameLink.Imports
         public static extern NativeError Schema_GetFirstError(VoidPtr Resp);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Error_IsValid")]
-        public static extern bool Error_IsValid(NativeError Error);
+        public static extern UInt32 Error_IsValid(NativeError Error);
 
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_Error_GetCode")]
         public static extern UInt32 Error_GetCode(NativeError Error);
@@ -494,7 +514,7 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_UpdateStateWithEmptyArray")]
         public static extern void PatchList_UpdateStateWithEmptyArray(Schema.PatchList PList, Int32 Operation, String Path);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_Empty")]
-        public static extern bool PatchList_Empty(Schema.PatchList PList);
+        public static extern UInt32 PatchList_Empty(Schema.PatchList PList);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_PatchList_Clear")]
         public static extern void PatchList_Clear(Schema.PatchList PList);
 
@@ -724,7 +744,7 @@ namespace MuxyGameLink.Imports
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetTimestamp")]
         public static extern Int64 MatchmakingUpdate_GetTimestamp(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetIsFollower")]
-        public static extern bool MatchmakingUpdate_IsFollower(Schema.MatchmakingUpdateResponse Resp);
+        public static extern UInt32 MatchmakingUpdate_IsFollower(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetSubscriptionTier")]
         public static extern int MatchmakingUpdate_GetSubscriptionTier(Schema.MatchmakingUpdateResponse Resp);
         [DllImport("cgamelink.dll", EntryPoint = "MuxyGameLink_MatchmakingUpdate_GetBitsSpent")]
@@ -793,10 +813,10 @@ namespace MuxyGameLink.Imports
         public static extern RequestId MGW_SDK_Deauthenticate(Schema.GatewaySDK SDK);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_ReceiveMessage")]
-        public static extern bool MGW_SDK_ReceiveMessage(Schema.GatewaySDK SDK, byte[] Message, uint BytesLength);
+        public static extern UInt32 MGW_SDK_ReceiveMessage(Schema.GatewaySDK SDK, byte[] Message, uint BytesLength);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_HasPayloads")]
-        public static extern bool MGW_SDK_HasPayloads(Schema.GatewaySDK SDK);
+        public static extern UInt32 MGW_SDK_HasPayloads(Schema.GatewaySDK SDK);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_HandleReconnect")]
         public static extern void MGW_SDK_HandleReconnect(Schema.GatewaySDK SDK);
@@ -811,7 +831,7 @@ namespace MuxyGameLink.Imports
         public static extern void MGW_SDK_ForeachPayload(Schema.GatewaySDK SDK, GatewayForeachPayloadDelegate Delegate, VoidPtr User);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_IsAuthenticated")]
-        public static extern bool MGW_SDK_IsAuthenticated(Schema.GatewaySDK SDK);
+        public static extern UInt32 MGW_SDK_IsAuthenticated(Schema.GatewaySDK SDK);
 
         [DllImport("cgamelink.dll", EntryPoint = "MGW_SDK_SetGameMetadata")]
         public static extern RequestId MGW_SDK_SetGameMetadata(Schema.GatewaySDK SDK, MGW_GameMetadata Meta);

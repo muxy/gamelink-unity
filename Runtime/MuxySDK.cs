@@ -2,8 +2,10 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using MuxyGameLink.Imports;
+using MuxyGameLink.Imports.Schema;
 
 #if UNITY_EDITOR || UNITY_STANDALONE
+using AOT;
 using UnityEngine;
 #endif
 
@@ -19,7 +21,7 @@ namespace MuxyGameLink
             IntPtr Ptr = Imported.ProjectionWebsocketConnectionURL(this.ClientId, (Int32)Stage, "csharp", 0, 0, 1);
             return NativeString.StringFromUTF8AndDeallocate(Ptr);
         }
-        
+
         /// <summary> Constructs the SDK </summary>
         /// <param name="ClientId"> Your given Muxy ClientId </param>
         public SDK(String ClientId)
@@ -60,33 +62,68 @@ namespace MuxyGameLink
         /// <returns> Returns true if we are currently authenticated </returns>
         public bool IsAuthenticated()
         {
-            return Imported.IsAuthenticated(this.Instance);
+            return Imported.IsAuthenticated(this.Instance) != 0;
         }
 
         public delegate void AuthenticationCallback(AuthenticationResponse Payload);
+
+        private class AuthenticationInvocationParameters
+        {
+            public SDK SDK;
+            public AuthenticationCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(AuthenticateResponseDelegate))]
+#endif
+        private static void InvokeAuthenticationCallback(IntPtr Data, AuthenticateResponse AuthResp)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle Handle = GCHandle.FromIntPtr(Data);
+            if (Handle.Target == null)
+            {
+                return;
+            }
+
+            AuthenticationInvocationParameters args = Handle.Target as AuthenticationInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                AuthenticationResponse Response = new AuthenticationResponse(AuthResp);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+
+            Handle.Free();
+        }
+
         /// <summary> Authenticate with refresh token, which is obtained from initially authenticating with a PIN </summary>
         /// <param name="RefreshToken"> The refresh token obtained from calling AuthenticateWithPIN </param>
         /// <param name="Callback"> The callback to be called when the authentication attempt finishes </param>
         /// <returns> RequestId </returns>
         public UInt16 AuthenticateWithRefreshToken(string RefreshToken, AuthenticationCallback Callback)
         {
-            GCHandle? Handle = null;
-            AuthenticateResponseDelegate WrapperCallback = ((UserData, AuthResp) =>
-            {
-                AuthenticationResponse Response = new AuthenticationResponse(AuthResp);
-                try
-                {
-                    Callback(Response);
-                }
-                catch (Exception e)
-                {
-                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
-                }
-                Handle?.Free();
-            });
+            AuthenticationInvocationParameters args = new AuthenticationInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            return Imported.AuthenticateWithGameIDAndRefreshToken(this.Instance, this.ClientId, this.GameId, RefreshToken, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            return Imported.AuthenticateWithGameIDAndRefreshToken(this.Instance, this.ClientId, this.GameId, RefreshToken, InvokeAuthenticationCallback, GCHandle.ToIntPtr(Handle));
         }
 
         /// <summary> Authenticate with a PIN </summary>
@@ -95,23 +132,12 @@ namespace MuxyGameLink
         /// <returns> RequestId </returns>
         public UInt16 AuthenticateWithPIN(string PIN, AuthenticationCallback Callback)
         {
-            GCHandle? Handle = null;
-            AuthenticateResponseDelegate WrapperCallback = ((UserData, AuthResp) =>
-            {
-                AuthenticationResponse Response = new AuthenticationResponse(AuthResp);
-                try
-                {
-                    Callback(Response);
-                }
-                catch (Exception e)
-                {
-                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
-                }
-                Handle?.Free();
-            });
+            AuthenticationInvocationParameters args = new AuthenticationInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            return Imported.AuthenticateWithGameIDAndPIN(this.Instance, this.ClientId, this.GameId, PIN, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            return Imported.AuthenticateWithGameIDAndPIN(this.Instance, this.ClientId, this.GameId, PIN, InvokeAuthenticationCallback, GCHandle.ToIntPtr(Handle));
         }
 
         public UInt16 Deauthenticate()
@@ -145,25 +171,59 @@ namespace MuxyGameLink
         /// <returns> Returns true if the message was received correctly </returns>
         public bool ReceiveMessage(string Message)
         {
-            return Imported.ReceiveMessage(this.Instance, Message, (uint)Message.Length);
+            return Imported.ReceiveMessage(this.Instance, Message, (uint)Message.Length) != 0;
         }
 
         public delegate void PayloadCallback(string Payload);
-        /// <summary> Calls given callback on each payload waiting to be sent, generally used to send the payload through a Websocket </summary>
-        /// <param name="Callback"> Callback to be called on each iteration </param>
-        public void ForEachPayload(PayloadCallback Callback)
+
+        private class PayloadInvocationParameters
         {
-            PayloadDelegate WrapperCallback = ((UserData, Payload) =>
+            public PayloadCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(PayloadDelegate))]
+#endif
+        private static void InvokeForeachPayload(IntPtr Data, Payload Payload)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle Handle = GCHandle.FromIntPtr(Data);
+            if (Handle.Target == null)
+            {
+                return;
+            }
+
+            PayloadInvocationParameters args = Handle.Target as PayloadInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
             {
                 IntPtr ptr = Imported.Payload_GetData(Payload);
                 UInt64 len = Imported.Payload_GetSize(Payload);
 
                 string str = NativeString.StringFromUTF8(ptr, ((int)len));
-                Callback(str);
-            });
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            Imported.ForeachPayload(this.Instance, WrapperCallback, IntPtr.Zero);
+                args.Callback(str);
+            }
+        }
+
+        /// <summary> Calls given callback on each payload waiting to be sent, generally used to send the payload through a Websocket </summary>
+        /// <param name="Callback"> Callback to be called on each iteration </param>
+        public void ForEachPayload(PayloadCallback Callback)
+        {
+            PayloadInvocationParameters args = new PayloadInvocationParameters();
+            args.Callback = Callback;
+
+            GCHandle Handle = GCHandle.Alloc(args);
+            Imported.ForeachPayload(this.Instance, InvokeForeachPayload, GCHandle.ToIntPtr(Handle));
             Handle.Free();
         }
 
@@ -184,29 +244,64 @@ namespace MuxyGameLink
         }
 
         public delegate void GetStateCallback(StateResponse Response);
+
+        private class GetStateInvocationParameters
+        {
+            public SDK SDK;
+            public GetStateCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(StateGetDelegate))]
+#endif
+        private static void InvokeGetState(IntPtr Data, Imports.Schema.StateResponse StateResp)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            GetStateInvocationParameters args = handle.Target as GetStateInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                StateResponse Response = new StateResponse(StateResp);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+
+            handle.Free();
+        }
+
         /// <summary> Get target state </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <param name="Callback"> Callback to be called with state info</param>
         /// <returns> RequestId </returns>
         public UInt16 GetState(StateTarget Target, GetStateCallback Callback)
         {
-            GCHandle? Handle = null;
-            StateGetDelegate WrapperCallback = ((UserData, StateResp) =>
-            {
-                StateResponse Response = new StateResponse(StateResp);
-                try
-                {
-                    Callback(Response);
-                }
-                catch (Exception e)
-                {
-                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
-                }
-                Handle?.Free();
-            });
+            GetStateInvocationParameters args = new GetStateInvocationParameters();
+            args.Callback = Callback;
+            args.SDK = this;
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            return Imported.GetState(this.Instance, (Int32)Target, WrapperCallback, IntPtr.Zero);
+            GCHandle handle = GCHandle.Alloc(args);
+            return Imported.GetState(this.Instance, (Int32)Target, InvokeGetState, GCHandle.ToIntPtr(handle));
         }
 
         /// <summary> Set target state with integer </summary>
@@ -288,19 +383,61 @@ namespace MuxyGameLink
         }
 
         public delegate void UpdateStateCallback(StateUpdate Response);
+
+        private class UpdateStateInvocationParameters
+        {
+            public SDK SDK;
+            public UpdateStateCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(UpdateStateCallback))]
+#endif
+        private static void InvokeUpdateState(IntPtr Data, Imports.Schema.StateUpdate StateUpd)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            UpdateStateInvocationParameters args = handle.Target as UpdateStateInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                StateUpdate Response = new StateUpdate(StateUpd);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+        }
+
         /// <summary> Sets callback for state updates, requires call to SubscribeToStateUpdates to begin receiving updates </summary>
         /// <param name="Callback"> Callback that will be called when an update occurs</param>
         /// <returns> Handle to reference callback later for things like detaching </returns>
         public UInt32 OnStateUpdate(UpdateStateCallback Callback)
         {
-            StateUpdateDelegate WrapperCallback = ((UserData, Update) =>
-            {
-                StateUpdate Response = new StateUpdate(Update);
-                Callback(Response);
-            });
+            UpdateStateInvocationParameters args = new UpdateStateInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            UInt32 Result = Imported.OnStateUpdate(this.Instance, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            UInt32 Result = Imported.OnStateUpdate(this.Instance, InvokeUpdateState, GCHandle.ToIntPtr(Handle));
 
             OnStateUpdateHandles.Add(Result, Handle);
             return Result;
@@ -331,30 +468,63 @@ namespace MuxyGameLink
 
         public delegate void GetConfigCallback(ConfigResponse Response);
 
+        private class GetConfigInvocationParameters
+        {
+            public SDK SDK;
+            public GetConfigCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(ConfigGetDelegate))]
+#endif
+        private static void InvokeGetConfig(IntPtr Data, Imports.Schema.ConfigResponse CfgUpd)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            GetConfigInvocationParameters args = handle.Target as GetConfigInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                ConfigResponse Response = new ConfigResponse(CfgUpd);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+
+            handle.Free();
+        }
+
         /// <summary> Get config </summary>
         /// <param name="Target"> Either STATE_TARGET_CHANNEL or STATE_TARGET_EXTENSION </param>
         /// <param name="Callback"> Callback to be called to receive config data </param>
         /// <returns> RequestId </returns>
         public UInt16 GetConfig(ConfigTarget Target, GetConfigCallback Callback)
         {
-            GCHandle? Handle = null;
+            GetConfigInvocationParameters args = new GetConfigInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            ConfigGetDelegate WrapperCallback = ((UserData, ConfigResp) =>
-            {
-                ConfigResponse Response = new ConfigResponse(ConfigResp);
-                try
-                {
-                    Callback(Response);
-                }
-                catch (Exception e)
-                {
-                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
-                }
-                Handle?.Free();
-            });
-
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            return Imported.GetConfig(this.Instance, (Int32)Target, WrapperCallback, IntPtr.Zero);
+            GCHandle handle = GCHandle.Alloc(args);
+            return Imported.GetConfig(this.Instance, (Int32)Target, InvokeGetConfig, GCHandle.ToIntPtr(handle));
         }
 
         /// <summary> Update config with integer </summary>
@@ -423,19 +593,61 @@ namespace MuxyGameLink
         }
 
         public delegate void UpdateConfigCallback(ConfigUpdate Response);
+
+        private class UpdateConfigInvocationParameters
+        {
+            public SDK SDK;
+            public UpdateConfigCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(ConfigUpdateDelegate))]
+#endif
+        private static void InvokeUpdateConfig(IntPtr Data, Imports.Schema.ConfigUpdate Upd)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            UpdateConfigInvocationParameters args = handle.Target as UpdateConfigInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                ConfigUpdate Response = new ConfigUpdate(Upd);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+        }
+
         /// <summary> Sets callback for config updates, requires call to SubscribeToConfigurationChanges to begin receiving updates </summary>
         /// <param name="Callback"> Callback that will be called when an update occurs</param>
         /// <returns> Handle to reference callback later for things like detaching </returns>
         public UInt32 OnConfigUpdate(UpdateConfigCallback Callback)
         {
-            ConfigUpdateDelegate WrapperCallback = ((UserData, Update) =>
-            {
-                ConfigUpdate Response = new ConfigUpdate(Update);
-                Callback(Response);
-            });
+            UpdateConfigInvocationParameters args = new UpdateConfigInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            UInt32 Result = Imported.OnConfigUpdate(this.Instance, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            UInt32 Result = Imported.OnConfigUpdate(this.Instance, InvokeUpdateConfig, GCHandle.ToIntPtr(Handle));
 
             OnConfigUpdateHandles.Add(Result, Handle);
             return Result;
@@ -490,19 +702,61 @@ namespace MuxyGameLink
         }
 
         public delegate void DatastreamCallback(DatastreamUpdate Update);
+
+        private class DatastreamInvocationParameters
+        {
+            public SDK SDK;
+            public DatastreamCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(DatastreamUpdateDelegate))]
+#endif
+        private static void InvokeDatastream(IntPtr Data, Imports.Schema.DatastreamUpdate Upd)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            DatastreamInvocationParameters args = handle.Target as DatastreamInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                DatastreamUpdate Response = new DatastreamUpdate(Upd);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+        }
+
         /// <summary> Sets callback for datastream, requires call to SubscribeToDatastream to begin receiving updates </summary>
         /// <param name="Callback"> Callback that will be called when an update occurs</param>
         /// <returns> Handle to reference callback later for things like detaching </returns>
         public UInt32 OnDatastream(DatastreamCallback Callback)
         {
-            DatastreamUpdateDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.DatastreamUpdate Update) =>
-            {
-                DatastreamUpdate Response = new DatastreamUpdate(Update);
-                Callback(Response);
-            });
+            DatastreamInvocationParameters args = new DatastreamInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            UInt32 Result = Imported.OnDatastream(this.Instance, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            UInt32 Result = Imported.OnDatastream(this.Instance, InvokeDatastream, GCHandle.ToIntPtr(Handle));
 
             OnDatastreamHandles.Add(Result, Handle);
             return Result;
@@ -554,19 +808,61 @@ namespace MuxyGameLink
         }
 
         public delegate void TransactionCallback(Transaction Purchase);
+
+        private class TransactionInvocationParameters
+        {
+            public SDK SDK;
+            public TransactionCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(TransactionResponseDelegate))]
+#endif
+        private static void InvokeTransaction(IntPtr Data, Imports.Schema.TransactionResponse Resp)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            TransactionInvocationParameters args = handle.Target as TransactionInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                Transaction Response = new Transaction(Resp);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+        }
+
         /// <summary> Sets callback for Twitch Bit Purchasing, requires call to SubscribeToSKU or SubscribeToAllPurchases to begin receiving purchase updates </summary>
         /// <param name="Callback"> Callback that will be called when a purchase occurs </param>
         /// <returns> Handle to reference callback later for things like detaching </returns>
         public UInt32 OnTransaction(TransactionCallback Callback)
         {
-            TransactionResponseDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.TransactionResponse Response) =>
-            {
-                Transaction Converted = new Transaction(Response);
-                Callback(Converted);
-            });
-                
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            UInt32 Result = Imported.OnTransaction(this.Instance, WrapperCallback, IntPtr.Zero);
+            TransactionInvocationParameters args = new TransactionInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
+
+            GCHandle Handle = GCHandle.Alloc(args);
+            UInt32 Result = Imported.OnTransaction(this.Instance, InvokeTransaction, GCHandle.ToIntPtr(Handle));
 
             OnTransactionHandles.Add(Result, Handle);
             return Result;
@@ -586,28 +882,64 @@ namespace MuxyGameLink
         }
 
         public delegate void GetOutstandingTransactionsCallback(OutstandingTransactions Transactions);
+
+        private class OutstandingTransactionsInvocationParameters
+        {
+            public SDK SDK;
+            public GetOutstandingTransactionsCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(GetOutstandingTransactionsDelegate))]
+#endif
+        private static void InvokeGetOutstandingTransactions(IntPtr Data, Imports.Schema.GetOutstandingTransactionsResponse Resp)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            OutstandingTransactionsInvocationParameters args = handle.Target as OutstandingTransactionsInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                OutstandingTransactions Response = new OutstandingTransactions(Resp);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+
+            handle.Free();
+        }
+
         /// <summary> Get all outstanding transactions that need validation </summary>
         /// <param name="SKU"> SKU to get outstanding transactions for </param>
         /// <param name="Callback"> Callback to receive transactions info </param>
         /// <returns> RequestId </returns>
         public UInt16 GetOutstandingTransactions(String SKU, GetOutstandingTransactionsCallback Callback)
         {
-            GCHandle? Handle = null;
-            GetOutstandingTransactionsDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetOutstandingTransactionsResponse Response) =>
-            {
-                OutstandingTransactions Converted = new OutstandingTransactions(Response);
-                try
-                {
-                    Callback(Converted);
-                }
-                catch (Exception e)
-                {
-                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
-                }
-                Handle?.Free();
-            });
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            return Imported.GetOutstandingTransactions(this.Instance, SKU, WrapperCallback, IntPtr.Zero);
+            OutstandingTransactionsInvocationParameters args = new OutstandingTransactionsInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
+
+            GCHandle Handle = GCHandle.Alloc(args);
+            return Imported.GetOutstandingTransactions(this.Instance, SKU, InvokeGetOutstandingTransactions, GCHandle.ToIntPtr(Handle));
         }
 
         /// <summary> Refund given transaction for user </summary>
@@ -686,45 +1018,121 @@ namespace MuxyGameLink
         }
 
         public delegate void GetPollCallback(GetPollResponse Response);
+
+        private class GetPollInvocationParameters
+        {
+            public SDK SDK;
+            public GetPollCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(GetPollResponseDelegate))]
+#endif
+        private static void InvokeGetPollCallback(IntPtr Data, Imports.Schema.GetPollResponse Resp)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            GetPollInvocationParameters args = handle.Target as GetPollInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                GetPollResponse Response = new GetPollResponse(Resp);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+
+            handle.Free();
+        }
+
         /// <summary> Get Poll information once </summary>
         /// <param name="PollId"> Poll Id to delete, given from CreatePoll </param>
         /// <param name="Callback"> Callback to receive poll info </param>
         /// <returns> RequestId </returns>
         public UInt16 GetPoll(String PollId, GetPollCallback Callback)
         {
-            GCHandle? Handle = null;
-            GetPollResponseDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetPollResponse Response) =>
-            {
-                GetPollResponse Converted = new GetPollResponse(Response);
-                try
-                {
-                    Callback(Converted);
-                }
-                catch (Exception e)
-                {
-                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
-                }
-                Handle?.Free();
-            });
+            GetPollInvocationParameters args = new GetPollInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            return Imported.GetPoll(this.Instance, PollId, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            return Imported.GetPoll(this.Instance, PollId, InvokeGetPollCallback, GCHandle.ToIntPtr(Handle));
         }
 
         public delegate void PollUpdateResponseCallback(PollUpdateResponse PResp);
+        private class PollUpdateInvocationParameters
+        {
+            public SDK SDK;
+            public PollUpdateResponseCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(PollUpdateResponseDelegate))]
+#endif
+        private static void InvokePollUpdateCallback(IntPtr Data, Imports.Schema.PollUpdateResponse Resp)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            PollUpdateInvocationParameters args = handle.Target as PollUpdateInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                PollUpdateResponse Response = new PollUpdateResponse(Resp);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+        }
+
         /// <summary> Sets callback for Poll Updates, requires call to SubscribeToPoll to begin receiving poll updates </summary>
         /// <param name="Callback"> Callback that will be called when a poll update occurs </param>
         /// <returns> Handle to reference callback later for things like detaching </returns>
         public UInt32 OnPollUpdate(PollUpdateResponseCallback Callback)
         {
-            PollUpdateResponseDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.PollUpdateResponse PResp) =>
-            {
-                PollUpdateResponse Response = new PollUpdateResponse(PResp);
-                Callback(Response);
-            });
+            PollUpdateInvocationParameters args = new PollUpdateInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            UInt32 Result = Imported.OnPollUpdate(this.Instance, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            UInt32 Result = Imported.OnPollUpdate(this.Instance, InvokePollUpdateCallback, GCHandle.ToIntPtr(Handle));
 
             OnPollUpdateHandles.Add(Result, Handle);
             return Result;
@@ -746,7 +1154,6 @@ namespace MuxyGameLink
         #endregion
 
         #region Matchmaking
-        public delegate void MatchmakingUpdateCallback(MatchmakingUpdate MResp);
         /// <summary> Subscribe to MatchmakingQueueInvite, a callback must first be set with OnMatchmakingQueueInvite </summary>
         /// <returns> RequestId </returns>
         public UInt16 SubscribeToMatchmakingQueueInvite()
@@ -773,19 +1180,61 @@ namespace MuxyGameLink
             return Imported.RemoveMatchmakingEntry(this.Instance, Id);
         }
 
+        public delegate void MatchmakingUpdateCallback(MatchmakingUpdate MResp);
+        private class MatchmakingUpdateInvocationParameters
+        {
+            public SDK SDK;
+            public MatchmakingUpdateCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(MatchmakingUpdateDelegate))]
+#endif
+        private static void InvokeMatchmakingUpdateCallback(IntPtr Data, Imports.Schema.MatchmakingUpdateResponse Resp)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(Data);
+            if (handle.Target == null)
+            {
+                return;
+            }
+
+            MatchmakingUpdateInvocationParameters args = handle.Target as MatchmakingUpdateInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                MatchmakingUpdate Response = new MatchmakingUpdate(Resp);
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
+            }
+        }
+
         /// <summary> Sets callback for QueueInvites, requires call to SubscribeToMatchmakingQueueInvite to begin receiving queue updates </summary>
         /// <param name="Callback"> Callback that will be called when a queue invite occurs </param>
         /// <returns> Handle to reference callback later for things like detaching </returns>
         public UInt32 OnMatchmakingQueueInvite(MatchmakingUpdateCallback Callback)
         {
-            MatchmakingUpdateDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.MatchmakingUpdateResponse MResp) =>
-            {
-                MatchmakingUpdate Response = new MatchmakingUpdate(MResp);
-                Callback(Response);
-            });
+            MatchmakingUpdateInvocationParameters args = new MatchmakingUpdateInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
 
-            GCHandle Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            UInt32 Result = Imported.OnMatchmakingQueueInvite(this.Instance, WrapperCallback, IntPtr.Zero);
+            GCHandle Handle = GCHandle.Alloc(args);
+            UInt32 Result = Imported.OnMatchmakingQueueInvite(this.Instance, InvokeMatchmakingUpdateCallback, GCHandle.ToIntPtr(Handle));
 
             OnMatchmakingUpdateHandles.Add(Result, Handle);
             return Result;
@@ -805,7 +1254,6 @@ namespace MuxyGameLink
         }
 
         #endregion
-
 
         #region Metadata
         public class GameMetadata
@@ -828,25 +1276,61 @@ namespace MuxyGameLink
 
         #region Drops
         public delegate void GetDropsCallback(GetDropsResponse Resp);
-        public UInt16 GetDrops(String Status, GetDropsCallback Callback)
+
+        private class GetDropsInvocationParameters
         {
-            GCHandle? Handle = null;
-            GetDropsResponseDelegate WrapperCallback = ((IntPtr UserData, Imports.Schema.GetDropsResponse Resp) =>
+            public SDK SDK;
+            public GetDropsCallback Callback;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(GetDropsResponseDelegate))]
+#endif
+        private static void InvokeGetDropsCallback(IntPtr Data, Imports.Schema.GetDropsResponse Resp)
+        {
+            if (Data == IntPtr.Zero)
             {
-                GetDropsResponse Response = new(Resp);
+                return;
+            }
+
+            GCHandle Handle = GCHandle.FromIntPtr(Data);
+            if (Handle.Target == null)
+            {
+                return;
+            }
+
+            GetDropsInvocationParameters args = Handle.Target as GetDropsInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.Callback != null)
+            {
+                GetDropsResponse Response = new GetDropsResponse(Resp);
+
                 try
                 {
-                    Callback(Response);
+                    args.Callback(Response);
                 }
                 catch (Exception e)
                 {
-                    LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
                 }
-                Handle?.Free();
-            });
+            }
 
-            Handle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            UInt16 Result = Imported.GetDrops(this.Instance, Status, WrapperCallback, IntPtr.Zero);
+            Handle.Free();
+        }
+
+        public UInt16 GetDrops(String Status, GetDropsCallback Callback)
+        {
+            GetDropsInvocationParameters args = new GetDropsInvocationParameters();
+            args.SDK = this;
+            args.Callback = Callback;
+
+            GCHandle Handle = GCHandle.Alloc(args);
+            UInt16 Result = Imported.GetDrops(this.Instance, Status, InvokeGetDropsCallback, GCHandle.ToIntPtr(Handle));
 
             return Result;
         }
@@ -907,9 +1391,10 @@ namespace MuxyGameLink
             {
                 Imported.PatchList_UpdateStateWithEmptyArray(this.Obj, (Int32)Operation, Path);
             }
+
             public bool Empty()
             {
-                return Imported.PatchList_Empty(this.Obj);
+                return Imported.PatchList_Empty(this.Obj) != 0;
             }
             public void Clear()
             {
@@ -921,28 +1406,70 @@ namespace MuxyGameLink
 
         #region Debugging
         public delegate void OnDebugMessageCallback(String Message);
+        private OnDebugMessageCallback DebugMessageCallback;
+        private GCHandle OnDebugMessageHandle;
+
+        private class OnDebugMessageInvocationParameters
+        {
+            public SDK sdk;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        [MonoPInvokeCallback(typeof(DebugMessageDelegate))]
+#endif
+        private static void InvokeDebugMessageCallback(IntPtr Data, String Message)
+        {
+            if (Data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle Handle = GCHandle.FromIntPtr(Data);
+            if (Handle.Target == null)
+            {
+                return;
+            }
+
+            OnDebugMessageInvocationParameters args = Handle.Target as OnDebugMessageInvocationParameters;
+
+            if (args == null)
+            {
+                return;
+            }
+
+            if (args.sdk?.DebugMessageCallback != null)
+            {
+                args.sdk?.DebugMessageCallback(Message);
+            }
+        }
+
         /// <summary> Detach callback for poll updates </summary>
         /// <param name="Handle"> Handle to detach </param>
         public void OnDebugMessage(OnDebugMessageCallback Callback)
         {
-            DebugMessageDelegate WrapperCallback = ((IntPtr UserData, String Message) =>
-            {
-                Callback(Message);
-            });
+            DebugMessageCallback = Callback;
 
-            OnDebugMessageHandle = GCHandle.Alloc(WrapperCallback, GCHandleType.Normal);
-            Imported.OnDebugMessage(this.Instance, WrapperCallback, IntPtr.Zero);
+            OnDebugMessageInvocationParameters args = new OnDebugMessageInvocationParameters();
+            args.sdk = this;
+
+            OnDebugMessageHandle = GCHandle.Alloc(args);
+            Imported.OnDebugMessage(this.Instance, InvokeDebugMessageCallback, GCHandle.ToIntPtr(OnDebugMessageHandle));
         }
-        
+
         /// <summary> Detach callback for debug messages </summary>
         /// <param name="Handle"> Handle to detach </param>
         public void DetachOnDebugMessage()
         {
             Imported.DetachOnDebugMessage(this.Instance);
-            if (OnDebugMessageHandle != null)
+            try
             {
                 OnDebugMessageHandle.Free();
             }
+            catch (InvalidOperationException)
+            {
+                // Ignore
+            }
+            DebugMessageCallback = null;
         }
         #endregion
 
@@ -953,7 +1480,6 @@ namespace MuxyGameLink
         private SDKInstance Instance;
         private User CachedUserInstance;
 
-        private GCHandle OnDebugMessageHandle;
         private Dictionary<UInt32, GCHandle> OnDatastreamHandles;
         private Dictionary<UInt32, GCHandle> OnTransactionHandles;
         private Dictionary<UInt32, GCHandle> OnStateUpdateHandles;
