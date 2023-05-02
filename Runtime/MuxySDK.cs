@@ -1086,7 +1086,7 @@ namespace MuxyGameLink
         }
 
 #if UNITY_EDITOR || UNITY_STANDALONE
-        [MonoPInvokeCallback(typeof(GetPollResponseDelegate))]
+        [MonoPInvokeCallback(typeof(PollUpdateResponseDelegate))]
 #endif
         private static void InvokePollUpdateCallback(IntPtr Data, Imports.Schema.PollUpdateResponse Resp)
         {
@@ -1279,6 +1279,7 @@ namespace MuxyGameLink
 
         private class GetDropsInvocationParameters
         {
+            public SDK SDK;
             public GetDropsCallback Callback;
         }
 
@@ -1308,7 +1309,15 @@ namespace MuxyGameLink
             if (args.Callback != null)
             {
                 GetDropsResponse Response = new GetDropsResponse(Resp);
-                args.Callback(Response);
+
+                try
+                {
+                    args.Callback(Response);
+                }
+                catch (Exception e)
+                {
+                    args.SDK?.LogMessage("Callbacks cannot throw, caught and discarded exception: " + e);
+                }
             }
 
             Handle.Free();
@@ -1317,6 +1326,7 @@ namespace MuxyGameLink
         public UInt16 GetDrops(String Status, GetDropsCallback Callback)
         {
             GetDropsInvocationParameters args = new GetDropsInvocationParameters();
+            args.SDK = this;
             args.Callback = Callback;
 
             GCHandle Handle = GCHandle.Alloc(args);
@@ -1398,7 +1408,6 @@ namespace MuxyGameLink
         public delegate void OnDebugMessageCallback(String Message);
         private OnDebugMessageCallback DebugMessageCallback;
         private GCHandle OnDebugMessageHandle;
-
 
         private class OnDebugMessageInvocationParameters
         {
