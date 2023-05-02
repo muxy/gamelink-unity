@@ -221,13 +221,13 @@ namespace MuxyGateway
             }
 
             byte[] Bytes = UTF8WithoutBOM.GetBytes(Message);
-            bool result = Imported.MGW_SDK_ReceiveMessage(Instance, Bytes, (uint)Bytes.Length);
+            bool result = Imported.MGW_SDK_ReceiveMessage(Instance, Bytes, (uint)Bytes.Length) != 0;
             return result;
         }
 
         public bool HasPayloads()
         {
-            return Imported.MGW_SDK_HasPayloads(Instance);
+            return Imported.MGW_SDK_HasPayloads(Instance) != 0;
         }
 
         public delegate void ForeachPayloadDelegate(Payload Payload);
@@ -326,7 +326,7 @@ namespace MuxyGateway
         {
             get
             {
-                return Imported.MGW_SDK_IsAuthenticated(Instance);
+                return Imported.MGW_SDK_IsAuthenticated(Instance) != 0;
             }
         }
         #endregion

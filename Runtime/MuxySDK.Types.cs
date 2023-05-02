@@ -66,7 +66,9 @@ namespace MuxyGameLink
         public HasError(System.IntPtr ObjectPointer)
         {
             NativeError Err = Imported.Schema_GetFirstError(ObjectPointer);
-            if (Imported.Error_IsValid(Err))
+            UInt32 b = Imported.Error_IsValid(Err);
+
+            if (b != 0)
             {
                 this._FirstError = new Error(Err);
                 return;
@@ -362,7 +364,7 @@ namespace MuxyGameLink
             this.TwitchUsername = NativeString.StringFromUTF8(Imported.MatchmakingUpdate_GetTwitchUsername(Obj));
             this.TwitchID = NativeString.StringFromUTF8(Imported.MatchmakingUpdate_GetTwitchID(Obj));
             this.Timestamp = Imported.MatchmakingUpdate_GetTimestamp(Obj);
-            this.IsFollower = Imported.MatchmakingUpdate_IsFollower(Obj);
+            this.IsFollower = Imported.MatchmakingUpdate_IsFollower(Obj) != 0;
             this.SubscriptionTier = Imported.MatchmakingUpdate_GetSubscriptionTier(Obj);
             this.BitsSpent = Imported.MatchmakingUpdate_GetBitsSpent(Obj);
         }
