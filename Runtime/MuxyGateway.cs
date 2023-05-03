@@ -226,7 +226,7 @@ namespace MuxyGateway
         {
             try
             {
-                Transport.StopAsync().Wait();
+                Transport.StopAsync().RunSynchronously();
             }
             finally
             {
