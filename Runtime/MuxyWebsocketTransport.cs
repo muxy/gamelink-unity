@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_STANDALONE
 using UnityEditor;
 using UnityEngine;
 #endif
@@ -75,6 +75,14 @@ namespace MuxyGameLink
                 StopAsync().Wait();
             };
 #endif
+
+#if UNITY_STANDALONE
+            UnityEngine.Application.quitting += () =>
+            {
+                LogMessage("Stopping due to application quit.");
+                StopAsync().Wait();
+            };
+#endif
         }
 
         ~WebsocketTransport()
@@ -83,16 +91,10 @@ namespace MuxyGameLink
             {
                 StopAsync().Wait();
             }
-#if UNITY_EDITOR
             catch (InvalidOperationException ex)
             {
                 LogMessage(ex.ToString());
             }
-#else
-            catch (InvalidOperationException)
-            {
-            }
-#endif
         }
 
         /// <summary>
@@ -159,7 +161,7 @@ namespace MuxyGameLink
 
         public void Disconnect()
         {
-            StopAsync();
+            StopAsync().Wait();
         }
 
         /// <summary>
@@ -169,6 +171,11 @@ namespace MuxyGameLink
         /// <param name="instance">The instance to use for sending and receiving messages</param>
         public void Run(SDK instance)
         {
+            if (WriteThread != null || ReadThread != null)
+            {
+                Disconnect();
+            }
+
             Done = false;
             WriteThread = new Thread(async () =>
             {
@@ -183,10 +190,6 @@ namespace MuxyGameLink
                 catch (Exception ex)
                 {
                     LogMessage(ex.ToString());
-                }
-                finally 
-                {
-                    LogMessage("Stopping write thread");
                 }
 
             });
@@ -205,16 +208,17 @@ namespace MuxyGameLink
                 {
                     LogMessage(ex.ToString());
                 }
-                finally
-                {
-                    LogMessage("Stopping read thread");
-                }
             });
             ReadThread.Start();
         }
 
         public void Run(MuxyGateway.SDK instance)
         {
+            if (WriteThread != null || ReadThread != null)
+            {
+                Disconnect();
+            }
+
             Done = false;
             WriteThread = new Thread(async () =>
             {
@@ -310,11 +314,13 @@ namespace MuxyGameLink
             if (WriteThread != null)
             {
                 WriteThread.Join(TimeSpan.FromSeconds(5));
+                WriteThread = null;
             }
 
             if (ReadThread != null)
             {
                 ReadThread.Join(TimeSpan.FromSeconds(5));
+                WriteThread = null;
             }
 
             UnboundedCancellationSource = new CancellationTokenSource();
@@ -356,9 +362,14 @@ namespace MuxyGameLink
                     }
                 }
             }
-            catch (InvalidOperationException ex)
+            catch (ThreadAbortException)
             {
-                Console.WriteLine(ex.ToString());
+                // Don't try.
+                return;
+            }
+            catch (Exception ex)
+            {
+                LogMessage(ex.ToString());
 
                 if (!Done)
                 {
@@ -403,9 +414,14 @@ namespace MuxyGameLink
                     }
                 }
             }
-            catch (InvalidOperationException ex)
+            catch (ThreadAbortException)
             {
-                Console.WriteLine(ex.ToString());
+                // Don't try.
+                return;
+            }
+            catch (Exception ex)
+            {
+                LogMessage(ex.ToString());
 
                 if (!Done)
                 {
@@ -545,8 +561,9 @@ namespace MuxyGameLink
                     // Don't try.
                     return;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    LogMessage(ex.ToString());
                     if (!Done)
                     {
                         await AttemptReconnect(instance);
@@ -579,6 +596,8 @@ namespace MuxyGameLink
             }
 
             Reconnecting = true;
+            LogMessage("Attempting reconnect.");
+
             if (Websocket.State != WebSocketState.Aborted)
             {
                 try
@@ -638,6 +657,7 @@ namespace MuxyGameLink
             }
 
             Reconnecting = true;
+            LogMessage("Attempting reconnect.");
 
             if (Websocket.State != WebSocketState.Aborted)
             {
