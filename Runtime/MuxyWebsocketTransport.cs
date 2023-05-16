@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace MuxyGameLink
 {
-    public class WebsocketTransport
+    public class WebsocketTransport : IDisposable
     {
         private ClientWebSocket Websocket;
         private CancellationTokenSource UnboundedCancellationSource = new CancellationTokenSource();
@@ -26,6 +26,7 @@ namespace MuxyGameLink
         private Thread WriteThread;
         private Thread ReadThread;
         private bool Done = false;
+        private bool IsDisposed = false;
 
         private Uri TargetUri;
 
@@ -39,12 +40,37 @@ namespace MuxyGameLink
 
         private void LogMessage(string message)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_STANDALONE
             UnityEngine.Debug.Log(message);
 #else
             Console.WriteLine(message);
 #endif
         }
+
+
+#if UNITY_EDITOR
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingPlayMode)
+            {
+                // If a user forgets to stop the websocket transport, the editor locks up.
+                // This is bad, prevent this by attaching an event to stop the websocket connection
+                // when the editor stops the PIE mode.
+                LogMessage("Stopping websocket transport due to editor state change.");
+                LogMessage("This may cause errors while playing in editor, but prevents leaking a connection, which is worse.");
+
+                Dispose();
+            }
+        }
+#endif
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        private void OnQuitting()
+        {
+            LogMessage("Stopping due to application quit.");
+            Dispose();
+        }
+#endif
 
         /// <summary>
         ///  Creates a websocket transport without an associated Gamelink instance or stage.
@@ -56,37 +82,32 @@ namespace MuxyGameLink
             this.HandleMessagesInMainThread = HandleMessagesInMainThread;
 
 #if UNITY_EDITOR
-            EditorApplication.playModeStateChanged += (PlayModeStateChange state) =>
-            {
-                if (state == PlayModeStateChange.ExitingPlayMode)
-                {
-                    // If a user forgets to stop the websocket transport, the editor locks up.
-                    // This is bad, prevent this by attaching an event to stop the websocket connection
-                    // when the editor stops the PIE mode.
-                    LogMessage("Stopping websocket transport due to editor state change.");
-                    StopAsync().Wait();
-                    LogMessage("This may cause errors while playing in editor, but prevents leaking a connection, which is worse.");
-                }
-            };
-
-            EditorApplication.quitting += () =>
-            {
-                LogMessage("Stopping due to application quit.");
-                StopAsync().Wait();
-            };
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            EditorApplication.quitting += OnQuitting;
 #endif
 
 #if UNITY_STANDALONE
-            UnityEngine.Application.quitting += () =>
-            {
-                LogMessage("Stopping due to application quit.");
-                StopAsync().Wait();
-            };
+            UnityEngine.Application.quitting += OnQuitting;
 #endif
         }
 
-        ~WebsocketTransport()
+        public virtual void Dispose()
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            IsDisposed = true;
+#if UNITY_EDITOR
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.quitting -= OnQuitting;
+#endif
+
+#if UNITY_STANDALONE
+            UnityEngine.Application.quitting -= OnQuitting;
+#endif
+
             try
             {
                 StopAsync().Wait();
@@ -95,6 +116,11 @@ namespace MuxyGameLink
             {
                 LogMessage(ex.ToString());
             }
+        }
+
+        ~WebsocketTransport()
+        {
+            Dispose();
         }
 
         /// <summary>
@@ -120,7 +146,7 @@ namespace MuxyGameLink
         /// <param name="stage"></param>
         public async void OpenAndRunInStage(SDK instance, Stage stage)
         {
-            await Open("ws://" + instance.ConnectionAddress(stage))
+            await Open("wss://" + instance.ConnectionAddress(stage))
                 .ConfigureAwait(false);
             Run(instance);
         }
@@ -132,7 +158,7 @@ namespace MuxyGameLink
                 case Stage.Sandbox:
                     {
                         string url = instance.GetSandboxURL();
-                        await Open("ws://" + url)
+                        await Open("wss://" + url)
                             .ConfigureAwait(false);
                         break;
                     }
@@ -140,7 +166,7 @@ namespace MuxyGameLink
                 case Stage.Production:
                     {
                         string url = instance.GetProductionURL();
-                        await Open("ws://" + url)
+                        await Open("wss://" + url)
                             .ConfigureAwait(false);
                         break;
                     }
