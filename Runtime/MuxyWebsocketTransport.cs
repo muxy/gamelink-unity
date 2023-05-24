@@ -155,11 +155,13 @@ namespace MuxyGameLink
         /// <param name="stage"></param>
         public async Task<bool> OpenAndRunInStage(SDK instance, Stage stage)
         {
+            if (await Open("wss://" + instance.ConnectionAddress(stage)).ConfigureAwait(false))
+            {
+                Run(instance);
+                return true;
+            }
 
-            bool res = await Open("wss://" + instance.ConnectionAddress(stage))
-.ConfigureAwait(false);
-            Run(instance);
-            return res;
+            return false;
         }
 
         private async Task OpenAndRunInStage(MuxyGateway.SDK instance, Stage stage)
