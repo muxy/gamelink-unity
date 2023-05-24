@@ -128,15 +128,24 @@ namespace MuxyGameLink
         /// </summary>
         /// <param name="uri">URI to connect to. Must be prefixed with the protocol, usually "ws://"</param>
         /// <returns></returns>
-        public async Task Open(string uri)
+        public async Task<bool> Open(string uri)
         {
             TargetUri = new Uri(uri);
 
-            using (CancellationTokenSource src = TokenSource())
+            try
             {
-                await Websocket.ConnectAsync(TargetUri, src.Token)
-                    .ConfigureAwait(false);
+                using (CancellationTokenSource src = TokenSource())
+                {
+                    await Websocket.ConnectAsync(TargetUri, src.Token)
+                        .ConfigureAwait(false);
+                }
             }
+            catch (WebSocketException ex)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -144,11 +153,13 @@ namespace MuxyGameLink
         /// </summary>
         /// <param name="instance"></param>
         /// <param name="stage"></param>
-        public async void OpenAndRunInStage(SDK instance, Stage stage)
+        public async Task<bool> OpenAndRunInStage(SDK instance, Stage stage)
         {
-            await Open("wss://" + instance.ConnectionAddress(stage))
-                .ConfigureAwait(false);
+
+            bool res = await Open("wss://" + instance.ConnectionAddress(stage))
+.ConfigureAwait(false);
             Run(instance);
+            return res;
         }
 
         private async Task OpenAndRunInStage(MuxyGateway.SDK instance, Stage stage)
